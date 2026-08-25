@@ -1,0 +1,21 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build / dependency outputs
+node_modules/
+dist/
+build/
+__pycache__/
+.pytest_cache/
+.venv/
+venv/

@@ -10,7 +10,7 @@
 | `settings.json` | 훅 등록 (Bash + Write/Edit 양쪽 경로) | — |
 | `hooks/status-updated.sh` | 작업 트리에 변경이 있는데 STATUS의 "최종 갱신"이 오늘이 아니면 **세션 종료를 막는다** | 절대 규칙 9 |
 | `hooks/guard-dependency.sh` | `stack.md` 결정 표의 "선택" 열에 없는 패키지의 설치·매니페스트 편집을 **막는다** | 절대 규칙 4 |
-| `hooks/guard-secrets.sh` | 비밀 파일·비밀값 형태 문자열의 `git commit`(`-a` 포함)과 형상 관리 대상 파일 쓰기를 **막는다** | 절대 규칙 12 · S4 4부 |
+| `hooks/guard-secrets.sh` | 비밀 파일·비밀값 형태 문자열의 `git commit`(`-a`·같은 명령의 `git add` 대상 포함)과 형상 관리 대상 파일 쓰기를 **막는다** | 절대 규칙 12 · S4 4부 |
 | `agents/code-review.md` | 변경분 리뷰 전용 서브에이전트 — 검증 우회·스펙 드리프트·스택 위반을 잡는다 (코드는 못 고친다) | 절대 규칙 11 |
 | `agents/error-learning.md` | 에러 종합·인제스트 전용 서브에이전트 (코드는 못 고친다) | `docs/guides/error-learning-ingest.md` |
 | `commands/stage.md` | `/stage [n]` — 단계 진입 | `CLAUDE.md` §0 |

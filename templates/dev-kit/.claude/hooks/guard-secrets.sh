@@ -46,7 +46,9 @@ MSG
 # ---------- Write / Edit 경로 ----------
 if [ "$tool" != "Bash" ] && [ -n "$tool" ]; then
   fpath=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
-  content=$(printf '%s' "$input" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null || true)
+  # MultiEdit는 edits[] 배열로 온다 — 새 문자열을 전부 합쳐서 본다
+  content=$(printf '%s' "$input" \
+    | jq -r '.tool_input.content // .tool_input.new_string // ([.tool_input.edits[]?.new_string // ""] | join("\n"))' 2>/dev/null || true)
   [ -n "$fpath" ] || exit 0
   rel="${fpath#"$ROOT"/}"
 
@@ -69,8 +71,9 @@ fi
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
 [ -n "$cmd" ] || exit 0
 
-# 세그먼트 단위로 git … commit 호출을 찾는다 (경로 호출·git -C·env 접두어 포함)
-is_commit=0; all_flag=0
+# 세그먼트 단위로 git 서브커맨드를 찾는다 (경로 호출·전역 옵션·env 접두어 포함).
+# add와 commit이 한 명령에 있으면 훅 시점엔 아직 스테이징 전이다 — add 대상을 따로 모은다.
+is_commit=0; all_flag=0; add_all=0; add_paths=""
 while IFS= read -r seg; do
   [ -n "$seg" ] || continue
   set -f
@@ -87,16 +90,37 @@ while IFS= read -r seg; do
   [ $# -gt 0 ] || continue
   [ "$(basename "$1")" = "git" ] || continue
   shift
-  seen_commit=0
-  for tok in "$@"; do
-    case "$tok" in
-      commit) seen_commit=1 ;;
-      -a|--all) [ "$seen_commit" = 1 ] && all_flag=1 ;;
-      --*) : ;;
-      -*a*) [ "$seen_commit" = 1 ] && all_flag=1 ;;   # -am, -qam 등 결합 플래그 (--* 는 위에서 걸러짐)
+  # git 전역 옵션을 벗기고 서브커맨드를 찾는다 — 커밋 메시지 안의 "add" 같은 토큰을 서브커맨드로 오인하지 않는다
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -C|-c|--git-dir|--work-tree|--namespace|--exec-path) shift 2 2>/dev/null || break ;;
+      -*) shift ;;
+      *) break ;;
     esac
   done
-  [ "$seen_commit" = 1 ] && is_commit=1
+  [ $# -gt 0 ] || continue
+  sub="$1"; shift
+  case "$sub" in
+    commit)
+      is_commit=1
+      for tok in "$@"; do
+        case "$tok" in
+          -a|--all) all_flag=1 ;;
+          --*) : ;;
+          -*a*) all_flag=1 ;;   # -am, -qam 등 결합 플래그 (--* 는 위에서 걸러짐)
+        esac
+      done ;;
+    add)
+      for tok in "$@"; do
+        tok="${tok#[\"\']}"; tok="${tok%[\"\']}"   # 단순 따옴표는 벗긴다
+        case "$tok" in
+          -A|--all|-u|--update|.) add_all=1 ;;
+          -*) : ;;
+          *) add_paths="$add_paths
+$tok" ;;
+        esac
+      done ;;
+  esac
 done < <(printf '%s\n' "$cmd" | tr ';|&\n' '\n\n\n\n')
 
 [ "$is_commit" = 1 ] || exit 0
@@ -111,6 +135,27 @@ else
   files=$(git -C "$ROOT" diff --cached --name-only 2>/dev/null || true)
   diff_cmd=(git -C "$ROOT" diff --cached -U0)
 fi
+
+# 같은 명령의 git add 대상 — 아직 스테이징 전이므로 작업 트리에서 직접 본다
+pre_files=""
+if [ "$add_all" = 1 ]; then
+  # -uall: 미추적 디렉터리를 개별 파일로 펼친다 (안 하면 "dir/" 한 줄로 접힌다)
+  pre_files=$(git -C "$ROOT" status --porcelain -uall 2>/dev/null | cut -c4- \
+    | sed -E 's/^"(.*)"$/\1/; s/^.* -> //')
+elif [ -n "$add_paths" ]; then
+  pre_files=$(printf '%s\n' "$add_paths" | grep -v '^$' | while IFS= read -r p; do
+    if [ -d "$ROOT/$p" ]; then
+      git -C "$ROOT" status --porcelain -uall -- "$p" 2>/dev/null | cut -c4- \
+        | sed -E 's/^"(.*)"$/\1/; s/^.* -> //'
+    elif git -C "$ROOT" check-ignore -q -- "$p" 2>/dev/null; then
+      :   # gitignore된 파일은 add가 -f 없이는 받지 않는다 — 커밋되지 않는다
+    else
+      printf '%s\n' "$p"
+    fi
+  done)
+fi
+pre_files=$(printf '%s\n' "$pre_files" | grep -v '^$' | sort -u || true)
+files=$(printf '%s\n%s' "$files" "$pre_files" | grep -v '^$' | sort -u || true)
 [ -n "$files" ] || exit 0
 
 bad_files=$(printf '%s\n' "$files" | grep -Ei "$SECRET_FILE_RE" | grep -Evi "$EXAMPLE_FILE_RE" || true)
@@ -133,12 +178,26 @@ hits=$("${diff_cmd[@]}" 2>/dev/null \
   | grep -Ev "$ALLOW_RE" \
   | grep -Eic "$SECRET_RE" || true)
 
+# add 대상의 내용 — 추적 파일은 HEAD 대비 추가 행만, 미추적 파일은 전체를 본다
+while IFS= read -r f; do
+  [ -n "$f" ] && [ -f "$ROOT/$f" ] || continue
+  if git -C "$ROOT" ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then
+    [ "$all_flag" = 1 ] && continue   # diff HEAD가 이미 세었다
+    c=$(git -C "$ROOT" diff HEAD -U0 -- "$f" 2>/dev/null \
+      | grep -E '^\+' | grep -Ev '^\+\+\+ ' \
+      | grep -Ev "$ALLOW_RE" | grep -Eic "$SECRET_RE" || true)
+  else
+    c=$(grep -Ev "$ALLOW_RE" "$ROOT/$f" 2>/dev/null | grep -Eic "$SECRET_RE" || true)
+  fi
+  hits=$(( ${hits:-0} + ${c:-0} ))
+done <<< "$pre_files"
+
 if [ -z "$bad_files" ] && [ "${hits:-0}" -eq 0 ]; then exit 0; fi
 
 detail=""
 [ -n "$bad_files" ] && detail="커밋되려는 비밀 파일:
 $(printf '%s\n' "$bad_files" | sed 's/^/  - /')"
 [ "${hits:-0}" -gt 0 ] && detail="$detail
-커밋되려는 변경에서 비밀값 형태의 문자열 ${hits}건이 감지됐다. 확인: git diff --cached (또는 git diff HEAD)"
+커밋되려는 변경에서 비밀값 형태의 문자열 ${hits}건이 감지됐다. 확인: git diff --cached · git diff HEAD · 같은 명령의 add 대상"
 
 block "비밀값 커밋 시도" "$detail"

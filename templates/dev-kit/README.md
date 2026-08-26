@@ -46,7 +46,7 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 1. `CLAUDE.md` 상단의 `<프로젝트명>`, `<한 줄 설명>` 치환 (`AGENTS.md`는 호환용 진입점으로 그대로 둠)
 2. `docs/status/STATUS.md`에 시작 시점 기록 → 현재 단계를 `S1`로
 3. `jq` 설치 확인 (`jq --version`) — 없으면 guard 훅 2개가 경고만 남기고 통과한다
-4. 업무 자동화·AX 컨설팅 프로젝트면 `CLAUDE.md`의 애드온 줄 주석 해제
+4. 업무 자동화·AX 컨설팅 프로젝트면 `docs/guides/addons/business-automation.md`를 확인한다 (`CLAUDE.md` 라우팅 표에 이미 연결되어 있다)
 5. S1에서 사분면을 정한 직후 `docs/guides/profiles.md`로 **프로파일(Lite/Standard/Full)** 판정
 6. S4에서 `docs/spec/code-conventions.md`를 해당 기술 스택의 실제 검사 명령과 규칙으로 확정하고, **그 명령을 한 번 실행해 본다**
 7. AI에게: `"CLAUDE.md를 읽고 S1부터 시작해. 나를 인터뷰해서 진행해."` (또는 `/stage 1`)

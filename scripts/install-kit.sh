@@ -127,7 +127,7 @@ if [ "$MODE" = "install" ]; then
 설치 완료. 이어서 할 일:
   1. CLAUDE.md 상단의 <프로젝트명>, <한 줄 설명> 치환
   2. docs/status/STATUS.md에 시작 시점 기록 → 현재 단계 S1
-  3. (업무 자동화·AX 프로젝트면) CLAUDE.md의 애드온 줄 주석 해제
+  3. (업무 자동화·AX 프로젝트면) docs/guides/addons/business-automation.md 확인 (CLAUDE.md 라우팅 표에 연결돼 있다)
   4. Claude Code에서 /hooks 로 훅 등록 확인
   5. AI에게: "CLAUDE.md를 읽고 S1부터 시작해. 나를 인터뷰해서 진행해." (또는 /stage 1)
 NEXT

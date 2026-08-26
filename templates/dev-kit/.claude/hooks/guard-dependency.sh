@@ -86,7 +86,9 @@ MSG
 # ---------- Write / Edit 경로: 의존성 매니페스트 직접 편집 ----------
 if [ "$tool" != "Bash" ] && [ -n "$tool" ]; then
   fpath=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
-  content=$(printf '%s' "$input" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null || true)
+  # MultiEdit는 edits[] 배열로 온다 — 새 문자열을 전부 합쳐서 본다
+  content=$(printf '%s' "$input" \
+    | jq -r '.tool_input.content // .tool_input.new_string // ([.tool_input.edits[]?.new_string // ""] | join("\n"))' 2>/dev/null || true)
   [ -n "$fpath" ] && [ -n "$content" ] || exit 0
   fname=$(basename "$fpath")
   pkgs=""
@@ -153,8 +155,12 @@ while IFS= read -r seg || [ -n "$seg" ]; do
   esac
   [ "$take" = 1 ] || continue
   shift "$skip"
+  skip_next=0
   for tok in "$@"; do
+    [ "$skip_next" = 1 ] && { skip_next=0; continue; }
     case "$tok" in
+      # 값을 갖는 플래그 — 다음 토큰은 패키지가 아니다 (pip install -r requirements.txt 등)
+      -r|--requirement|-c|--constraint|-e|--editable|-t|--target|-i|--index-url|--extra-index-url|-f|--find-links|-w|--workspace|--prefix|--registry|-P|--python) skip_next=1; continue ;;
       -*|.|./*|/*|../*|'$'*|'`'*|'*'|'?') continue ;;   # 플래그·로컬 경로·치환·글롭은 대상 아님
     esac
     name="$(strip_version "$tok")"

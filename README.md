@@ -2,6 +2,8 @@
 
 AI 에이전트와 함께 소프트웨어를 개발할 때, **빠른 첫 구현보다 올바른 결정·권한·검증 증거·재사용 가능한 학습**을 남기기 위한 방법론입니다.
 
+**처음이라면 → [guides/getting-started.md](guides/getting-started.md)** — 이게 무엇이고, 5분 설치와 첫 한 바퀴에 무엇이 일어나는지.
+
 이 저장소에는 제품 코드가 없습니다. 제품별 PRD, 코드, 비밀값, 실행 로그는 각 제품의 로컬 저장소가 소유합니다.
 
 ## 구성
@@ -9,7 +11,7 @@ AI 에이전트와 함께 소프트웨어를 개발할 때, **빠른 첫 구현�
 ```text
 README.md                   방법론의 목적과 적용 경계
 templates/dev-kit/          프로젝트에 복사해 쓰는 실행 템플릿 (.claude/ 강제 장치 포함)
-guides/                     범용 해설 (현재 비어 있음 — 절차의 단일 기준은 templates/dev-kit/docs/guides/)
+guides/                     범용 해설 — 처음 쓰는 사람은 guides/getting-started.md 부터
 examples/first-pilot/       첫 적용을 검증하는 체크리스트
 CHANGELOG.md                방법론 자체의 변경 이력
 ```

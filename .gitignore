@@ -11,6 +11,9 @@ Thumbs.db
 *.pem
 *.key
 
+# 로컬 전용 — 저장소 자신의 이슈 로그는 공개하지 않는다 (공개 기록은 CHANGELOG.md)
+/issues.md
+
 # Build / dependency outputs
 node_modules/
 dist/

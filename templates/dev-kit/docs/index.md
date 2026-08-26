@@ -7,12 +7,14 @@
 
 | 폴더 | 성격 | 언제 읽나 | index |
 |---|---|---|---|
-| `guides/` | **HOW** — 각 단계를 어떻게 수행하는가 | 새 단계 진입 시 해당 파일 1개만 | `guides/index.md` |
-| `spec/` | **WHAT** — 무엇을 만드는가 (설계 산출물) | 코딩 전 · 설계 참조 시 | `spec/index.md` |
-| `plan/` | **WHEN** — 어떤 순서로 만드는가 | 사이클 시작·종료 시 | `plan/index.md` |
-| `status/` | **NOW** — 지금 어디인가 | **세션 시작·종료 시 항상** | `status/index.md` + `status/MOC.md` |
-| `quality/` | 문제 기록·검수·재발 방지 | 버그 발견 · 검수 · 배포 전 | `quality/index.md` |
-| `decisions/` | 되돌리기 어려운 선택의 근거 | 큰 선택 전후 | `decisions/index.md` |
+| `guides/` | **HOW** — 각 단계를 어떻게 수행하는가 | 새 단계 진입 시 해당 파일 1개만 | `docs/guides/index.md` |
+| `spec/` | **WHAT** — 무엇을 만드는가 (설계 산출물) | 코딩 전 · 설계 참조 시 | `docs/spec/index.md` |
+| `plan/` | **WHEN** — 어떤 순서로 만드는가 | 사이클·Story 시작·종료 시 | `docs/plan/index.md` |
+| `status/` | **NOW** — 지금 어디인가 | **세션 시작·종료 시 항상** | `docs/status/index.md` |
+| `quality/` | 문제 기록·검수·재발 방지 | 버그 발견 · 검수 · 배포 전 | `docs/quality/index.md` |
+| `decisions/` | 되돌리기 어려운 선택의 근거 | 큰 선택 전후 | `docs/decisions/index.md` |
+
+프로젝트 루트의 `.claude/`는 문서가 아니라 **강제 장치**다 (훅·커맨드·서브에이전트). 목록은 `.claude/README.md`.
 
 ## 읽기 우선순위
 
@@ -27,7 +29,7 @@
 
 - `guides/`는 **변하지 않는다** — 프로젝트가 달라져도 거의 동일한 절차서.
 - `spec/`·`plan/`·`status/`·`quality/`·`decisions/`는 **이 프로젝트의 내용물**이다. 단, 활성 문서는 작게 유지하고 완료 기록은 유형별 archive로 옮긴다.
-- 그래서 새 프로젝트를 시작할 때 `guides/`는 그대로 복사하고 나머지는 비운다.
+- 그래서 새 프로젝트를 시작할 때 `guides/`와 `.claude/`는 그대로 복사하고 나머지는 비운다.
 
 ## 파일 목록
 
@@ -36,34 +38,42 @@
 - `MOC.md` — 주제·흐름·결정·문서 관계 탐색 허브
 
 ### guides/ — 단계별 실행 지시서
+- `index.md` — 단계 목록·모드 전환·기본 프롬프트
 - `S1-problem.md` — 문제·범위 정의
 - `S2-domain.md` — 도메인·데이터·상태 정의
 - `S3-interface.md` — 인터페이스 설계
 - `S4-architecture.md` — 시스템 구조·스택·안정성
 - `S5-ui.md` — 시각 설계 (화면 없으면 스킵)
-- `S6-build.md` — 구축·검수·배포
+- `S6-build.md` — 구축·검수·배포 (TDD · 자동 테스트 승격 · 스펙 드리프트)
+- `profiles.md` — 사분면 → Lite/Standard/Full 절차량 판정
 - `decision-modes.md` — 기술·권한·구조 선택의 학습/실행 모드
 - `error-learning-ingest.md` — 새 에러 기록을 별도 에이전트가 종합·인제스트
-- `addons/business-automation.md` — 업무 자동화·AX 전용 추가 절차
+- `docs/guides/addons/business-automation.md` — 업무 자동화·AX 전용 추가 절차
 
 ### spec/ — 설계 산출물
+- `index.md` — 산출물 카탈로그·드리프트 규칙
 - `product.md` · `domain.md` · `interface.md` · `stack.md` · `architecture.md` · `code-conventions.md` · `ui.md`
 
 ### plan/ — 계획
-- `roadmap.md` — 마일스톤 + 백로그
+- `index.md` — 계획 카탈로그·원칙
+- `roadmap.md` — 마일스톤 + 백로그 (상한 30건)
 - `cycles/` — 사이클별 실행 계획
+- `stories/` — Story별 영향 범위·권한 계약·검증 방법
+- `archive/` — 완료된 사이클·Story (`archive/index.md`)
 
 ### status/ — 현재 상태
-- `STATUS.md` — 세션 연속성 스냅샷 (**작업 종료 시 반드시 갱신**)
-- `index.md` — 상태 파일 카탈로그 (**STATUS는 200줄 이하**)
-- `MOC.md` — 상태·병렬 작업·archive 탐색 허브
+- `STATUS.md` — 세션 연속성 스냅샷 (**작업 종료 시 반드시 갱신 — 훅이 강제**)
+- `index.md` — 상태 파일 카탈로그·탐색 (**STATUS는 200줄 이하**)
+- `archive/` — 해결된 차단요인·과거 스냅샷
 
 ### quality/ — 품질
+- `index.md` — 품질 흐름·심각도·**이슈 유형 표(정본)**
 - `issues.md` — 이슈 로그
-- `test-scenarios.md` — 검수 시나리오
+- `test-scenarios.md` — 검수 시나리오 (자동화 여부 포함)
 - `rules-learned.md` — 재발 방지 규칙
 - `learning-log.md` — Error Learning Agent의 인제스트 근거·결과
-- `archive/` — 검증 완료된 이슈의 유형별 보관
+- `archive/index.md` — 검증 완료된 이슈의 유형별 보관
 
 ### decisions/ — 의사결정 기록
+- `index.md` — ADR 목록·작성 기준
 - `ADR-000-template.md` — 양식

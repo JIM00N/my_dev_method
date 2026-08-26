@@ -71,14 +71,14 @@ copy_file() { # $1 = kit 기준 상대 경로
 # .claude/ 병합: hooks·commands·agents는 파일 단위로 넣고, settings.json은 조심스럽게
 merge_claude() {
   local d f rel
-  for d in hooks commands agents; do
+  for d in hooks scripts commands agents; do
     for f in "$SRC/.claude/$d"/*; do
       [ -e "$f" ] || continue
       rel=".claude/$d/$(basename "$f")"
       copy_file "$rel"
     done
   done
-  chmod 755 "$TARGET"/.claude/hooks/*.sh 2>/dev/null || true
+  chmod 755 "$TARGET"/.claude/hooks/*.sh "$TARGET"/.claude/scripts/*.sh "$TARGET"/.claude/scripts/*.py 2>/dev/null || true
   copy_file ".claude/README.md"
   if [ ! -e "$TARGET/.claude/settings.json" ]; then
     copy_file ".claude/settings.json"
@@ -93,6 +93,7 @@ merge_claude() {
 KIT_OWNED="
 docs/index.md
 docs/MOC.md
+docs/upstream/index.md
 docs/spec/index.md
 docs/plan/index.md
 docs/plan/archive/index.md
@@ -106,6 +107,39 @@ docs/decisions/index.md
 docs/decisions/ADR-000-template.md
 AGENTS.md
 "
+
+# 이 버전에서 새로 생긴 "프로젝트가 채우는" 양식 — 없을 때만 넣고, 있으면 절대 건드리지 않는다.
+# (업그레이드하는 저장소에는 이 파일들이 아예 없기 때문에 필요하다)
+KIT_SEED="
+docs/spec/source-map.md
+docs/upstream/manifest.tsv
+docs/upstream/prd.md
+docs/upstream/features.md
+docs/upstream/userflow.md
+docs/upstream/wireframe.md
+docs/upstream/plan.md
+"
+
+# 생성물은 형상 관리에서 뺀다. 이미 적혀 있으면 건드리지 않는다.
+ensure_gitignore() {
+  local gi="$TARGET/.gitignore" line
+  for line in 'docs/reports/' '.claude/scripts/__pycache__/'; do
+    if [ -f "$gi" ] && grep -qxF "$line" "$gi"; then continue; fi
+    if [ ! -f "$gi" ]; then
+      printf '# dev-kit 생성물 — 정본은 docs/ 의 md 다\n' > "$gi"
+    elif ! grep -q 'dev-kit 생성물' "$gi"; then
+      printf '\n# dev-kit 생성물 — 정본은 docs/ 의 md 다\n' >> "$gi"
+    fi
+    printf '%s\n' "$line" >> "$gi"; note "gitignore 추가: $line"
+  done
+}
+
+copy_if_absent() { # $1 = kit 기준 상대 경로. 이미 있으면 손대지 않는다.
+  local rel="$1" to="$TARGET/$1"
+  if [ -e "$to" ]; then return 0; fi
+  mkdir -p "$(dirname "$to")"
+  cp "$SRC/$rel" "$to"; note "생성: $rel (양식 — 이후 프로젝트가 소유한다)"
+}
 
 if [ "$MODE" = "install" ]; then
   # ---------- 신규 설치 ----------
@@ -121,15 +155,18 @@ if [ "$MODE" = "install" ]; then
     note "기존 .claude/ 발견 — 통째로 덮지 않고 병합한다:"
     merge_claude
   fi
-  chmod 755 "$TARGET"/.claude/hooks/*.sh 2>/dev/null || true
+  chmod 755 "$TARGET"/.claude/hooks/*.sh "$TARGET"/.claude/scripts/*.sh "$TARGET"/.claude/scripts/*.py 2>/dev/null || true
+  ensure_gitignore
   cat <<'NEXT'
 
 설치 완료. 이어서 할 일:
   1. CLAUDE.md 상단의 <프로젝트명>, <한 줄 설명> 치환
-  2. docs/status/STATUS.md에 시작 시점 기록 → 현재 단계 S1
+  2. docs/status/STATUS.md에 시작 시점 기록
   3. (업무 자동화·AX 프로젝트면) docs/guides/addons/business-automation.md 확인 (CLAUDE.md 라우팅 표에 연결돼 있다)
   4. Claude Code에서 /hooks 로 훅 등록 확인
-  5. AI에게: "CLAUDE.md를 읽고 S1부터 시작해. 나를 인터뷰해서 진행해." (또는 /stage 1)
+  5. /adopt 를 실행한다 (현재 단계 S0) — 진입점은 하나다.
+       저장소 안의 계획 문서를 먼저 찾고, 없으면 밖에 있는지 묻고,
+       그래도 없으면 /plan 으로 보내 키트가 직접 만든다.
 NEXT
 else
   # ---------- 업그레이드 ----------
@@ -145,7 +182,11 @@ else
   for rel in $KIT_OWNED; do
     copy_file "$rel"
   done
+  for rel in $KIT_SEED; do
+    copy_if_absent "$rel"
+  done
   merge_claude
+  ensure_gitignore
   # CLAUDE.md는 프로젝트명·§6 고유 규칙이 있어 자동 교체하지 않는다
   if ! cmp -s "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"; then
     cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md.dev-kit-new"
@@ -160,4 +201,18 @@ else
   3. CHANGELOG의 해당 버전 항목에서 "양식 변경"이 명시된 프로젝트 소유 파일이 있으면 내용을 새 양식으로 옮겨 적는다
   4. docs/status/STATUS.md 최근 결정에 업그레이드 사실 한 줄
 NEXT
+fi
+
+# settings.json 병합이 안 된 채 끝나면 훅 전부가 죽어 있는데, 커맨드·가이드는 멀쩡히 돌아서
+# 문제가 조용하다 — 산문 규칙만 남은 방법론이 된다. 그래서 마지막에 크게 알린다.
+# (이번 실행이 만든 것이든 지난 설치가 남긴 것이든, .dev-kit 파일이 남아 있는 한 같은 상태다)
+if [ -e "$TARGET/.claude/settings.json.dev-kit" ]; then
+  cat <<'WARN'
+
+⚠ 훅이 아직 등록되지 않았다 ─────────────────────────────────────────
+  기존 .claude/settings.json 이 있어 키트 판을 덮어쓰지 않았다.
+  .claude/settings.json.dev-kit 의 hooks 를 기존 파일에 병합하고 그 파일을 지우기 전까지
+  훅 3개(STATUS 갱신 강제 · 의존성 가드 · 비밀값 가드)는 하나도 동작하지 않는다.
+  커맨드·가이드는 정상 동작하므로 이 상태는 조용히 지나간다 — 지금 병합해라. 확인: /hooks
+WARN
 fi

@@ -28,7 +28,7 @@ while IFS=: read -r file ref; do
     echo "깨진 참조: $file → \`$ref\`"
     fail=1
   fi
-done < <(grep -rho --include='*.md' -E '`(docs|\.claude)/[A-Za-z0-9@_<>*./…-]+\.(md|sh|json)`' "$KIT" \
+done < <(grep -rho --include='*.md' -E '`(docs|\.claude)/[A-Za-z0-9@_<>*./…-]+\.(md|sh|json|tsv)`' "$KIT" \
           | sed 's/`//g' | sort -u \
           | while IFS= read -r r; do
               grep -rl --include='*.md' -F "\`$r\`" "$KIT" | while IFS= read -r f; do
@@ -41,7 +41,7 @@ while IFS=: read -r file line ref; do
   [ -n "$ref" ] || continue
   echo "경로 관례 위반(docs/ 접두어 없음): ${file#"$ROOT"/}:$line → $ref"
   fail=1
-done < <(grep -rno --include='*.md' -E '\`((guides|spec|plan|quality|status|decisions|addons)/[A-Za-z0-9@_<>*./…-]+\.(md|sh|json)|\.\./[A-Za-z0-9@_<>*./…-]+)\`' "$KIT" || true)
+done < <(grep -rno --include='*.md' -E '\`((guides|spec|plan|quality|status|decisions|addons|upstream)/[A-Za-z0-9@_<>*./…-]+\.(md|sh|json)|\.\./[A-Za-z0-9@_<>*./…-]+)\`' "$KIT" || true)
 
 # 2) 마크다운 링크 (저장소 전체, http 제외)
 while IFS= read -r file; do
@@ -65,12 +65,21 @@ while IFS= read -r mode_path; do
     echo "실행 권한 없는 훅: $mode_path"
     fail=1
   fi
-done < <(cd "$ROOT" && git ls-files -s 'templates/dev-kit/.claude/hooks/*.sh' 2>/dev/null | awk '{print $1" "$4}')
+done < <(cd "$ROOT" && git ls-files -s 'templates/dev-kit/.claude/hooks/*.sh' 'templates/dev-kit/.claude/scripts/*.sh' 'templates/dev-kit/.claude/scripts/*.py' 2>/dev/null | awk '{print $1" "$4}')
 
-# 4) 훅·설정 문법
-for sh in "$KIT"/.claude/hooks/*.sh; do
+# 4) 훅·스크립트·설정 문법
+for sh in "$KIT"/.claude/hooks/*.sh "$KIT"/.claude/scripts/*.sh; do
+  [ -e "$sh" ] || continue
   bash -n "$sh" || { echo "문법 오류: $sh"; fail=1; }
 done
+# .py 는 py_compile 대신 compile() 로 본다 — __pycache__ 를 남기지 않기 위해서다
+if command -v python3 >/dev/null 2>&1; then
+  for py in "$KIT"/.claude/scripts/*.py; do
+    [ -e "$py" ] || continue
+    python3 -c 'import sys;compile(open(sys.argv[1],encoding="utf-8").read(),sys.argv[1],"exec")' "$py" \
+      || { echo "문법 오류: $py"; fail=1; }
+  done
+fi
 if command -v jq >/dev/null 2>&1; then
   jq . "$KIT/.claude/settings.json" >/dev/null || { echo "settings.json 파싱 실패"; fail=1; }
 fi

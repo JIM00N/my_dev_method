@@ -7,6 +7,7 @@
 
 | 폴더 | 성격 | 언제 읽나 | index |
 |---|---|---|---|
+| `upstream/` | **SOURCE** — 상류가 준 계획 문서 (읽기 전용 스냅샷) | 도입 시 · 상류 동기화 시 | `docs/upstream/index.md` |
 | `guides/` | **HOW** — 각 단계를 어떻게 수행하는가 | 새 단계 진입 시 해당 파일 1개만 | `docs/guides/index.md` |
 | `spec/` | **WHAT** — 무엇을 만드는가 (설계 산출물) | 코딩 전 · 설계 참조 시 | `docs/spec/index.md` |
 | `plan/` | **WHEN** — 어떤 순서로 만드는가 | 사이클·Story 시작·종료 시 | `docs/plan/index.md` |
@@ -14,7 +15,7 @@
 | `quality/` | 문제 기록·검수·재발 방지 | 버그 발견 · 검수 · 배포 전 | `docs/quality/index.md` |
 | `decisions/` | 되돌리기 어려운 선택의 근거 | 큰 선택 전후 | `docs/decisions/index.md` |
 
-프로젝트 루트의 `.claude/`는 문서가 아니라 **강제 장치**다 (훅·커맨드·서브에이전트). 목록은 `.claude/README.md`.
+프로젝트 루트의 `.claude/`는 문서가 아니라 **강제 장치**다 (훅·스크립트·커맨드·서브에이전트). 목록은 `.claude/README.md`.
 
 ## 읽기 우선순위
 
@@ -37,8 +38,16 @@
 - `index.md` — 파일명·경로·현재성 카탈로그
 - `MOC.md` — 주제·흐름·결정·문서 관계 탐색 허브
 
+### upstream/ — 상류 계획 문서 스냅샷 (읽기 전용)
+- `index.md` — 규칙·파일 목록·수집 방법
+- `prd.md` · `features.md` · `userflow.md` · `wireframe.md` — 상류 산출물 사본
+- `manifest.tsv` — **기계용 수집 기록** (출처·수집시각·해시)
+
 ### guides/ — 단계별 실행 지시서
 - `index.md` — 단계 목록·모드 전환·기본 프롬프트
+- `S0-adopt.md` — 도입 (계획 문서 찾기 · 교차 대조 · ID 정리 · 계약 확인)
+- `plan.md` — 계획이 없을 때 키트가 직접 만든다 (`/plan`)
+- `ready.md` — 준비도 점검: 답이 없는 칸을 구현 전에 찾는다 (`/ready`)
 - `S1-problem.md` — 문제·범위 정의
 - `S2-domain.md` — 도메인·데이터·상태 정의
 - `S3-interface.md` — 인터페이스 설계
@@ -52,6 +61,7 @@
 
 ### spec/ — 설계 산출물
 - `index.md` — 산출물 카탈로그·드리프트 규칙
+- `source-map.md` — **요구사항·화면 정본 매핑표** (정본 소유권 · 계약 확인표 · 요구사항 ID·화면 ID·검증 조건 수)
 - `product.md` · `domain.md` · `interface.md` · `stack.md` · `architecture.md` · `code-conventions.md` · `ui.md`
 
 ### plan/ — 계획

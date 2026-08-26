@@ -59,3 +59,8 @@ CHANGELOG.md                방법론 자체의 변경 이력
    방법론이 유용했는지에 대한 **회고만** 이 저장소의 `examples/first-pilot/` 양식으로 가져옵니다.
 
 상세 적용법은 [templates/dev-kit/README.md](templates/dev-kit/README.md)를 참조하세요.
+
+## 라이선스
+
+[MIT](LICENSE). 복사해서 쓰고, 고쳐 쓰고, 자기 프로젝트에 넣어도 됩니다.
+`templates/dev-kit/`은 복사해 쓰라고 만든 것이므로 별도 표기 의무를 두지 않았습니다.

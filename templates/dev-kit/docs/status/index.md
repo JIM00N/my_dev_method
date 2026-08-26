@@ -22,7 +22,7 @@
 
 해결된 차단요인      → archive/blockers/
 큰 전환 이전의 상태   → archive/snapshots/
-완료 Story·Epic      → ../plan/archive/
+완료 사이클·Story    → ../plan/archive/
 검증 완료 이슈        → ../quality/archive/
 ```
 

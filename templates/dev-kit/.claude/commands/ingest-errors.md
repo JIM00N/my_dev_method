@@ -8,6 +8,6 @@ description: 새 에러 기록을 Error Learning Agent에 넘겨 규칙·검수 
 
 1. 승격된 규칙이 기존 규칙과 충돌하지 않는지 본다. 한 번의 예외를 전역 규칙으로 일반화했으면 되돌린다.
 2. 제안된 guide·spec·ADR 변경의 **영향 범위**를 검토한다. 다른 Story·문서와 충돌하면 반영하지 않고 이유를 남긴다.
-3. `rules-learned.md`가 10개를 넘었으면 해당 단계 가이드 본문으로 이관한다.
+3. `rules-learned.md`가 10개를 넘었으면 이관한다 — 프로젝트 고유 규칙은 `CLAUDE.md` 6절 또는 `docs/spec/code-conventions.md`로, 모든 프로젝트에 통할 규칙은 방법론 저장소(my_dev_method)에 제안한다. **이 프로젝트의 `docs/guides/`는 고치지 않는다** — guides는 새 프로젝트에 그대로 복사되는 불변 절차서다.
 4. 자동 테스트 승격 후보가 있으면 다음 사이클 문서의 할 일에 넣는다.
 5. `docs/status/STATUS.md`를 갱신한다.

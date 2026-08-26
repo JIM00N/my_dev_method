@@ -30,7 +30,7 @@
 
 ## 활성 병렬 작업
 
-현재 열려 있는 Story·검수·조사만 한 줄씩 적는다. 상세 상태·DoD·영향 범위·권한 계약은 해당 `plan/cycles/`·`plan/stories/` 문서에 둔다.
+현재 열려 있는 Story·검수·조사만 한 줄씩 적는다. 상세 상태·DoD·영향 범위·권한 계약은 해당 `docs/plan/cycles/`·`docs/plan/stories/` 문서에 둔다.
 
 | ID | 작업 | 담당 에이전트 | 상태 | 상세 문서 | 다음 행동 |
 |---|---|---|---|---|---|
@@ -86,6 +86,6 @@ AI가 혼자 진행할 수 없는 것만 둔다. 해결되면 `docs/status/archi
 | 이슈 발생·해결 | 열린 이슈 링크 추가·제거 | quality/issues → quality/archive |
 | 차단 발생·해결 | 차단 항목 추가·제거 | status/archive/blockers |
 | 프로파일 승급 | 머리말 프로파일 + 최근 결정 한 줄 | guides/profiles.md |
-| 사이클·Epic 종료 | 현재 사이클·다음 행동 갱신 | plan/archive/cycles·epics |
+| 사이클 종료 | 현재 사이클·다음 행동 갱신 | plan/archive/cycles |
 | 큰 단계 종료 | 필요 시 스냅샷 저장 | status/archive/snapshots |
 | 세션 종료 | 현재 문장·다음 3가지·갱신 시각 | — |

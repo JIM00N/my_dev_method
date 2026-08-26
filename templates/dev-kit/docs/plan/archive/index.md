@@ -5,6 +5,6 @@
 
 - `cycles/` — 완료·취소된 사이클 문서
 - `stories/` — 종료된 Story 문서: 계약과 실제 결과의 차이, 배운 것
-- `epics/` — Epic 종료 기록: 목표, 포함 Story, 실제 결과, 범위 변경, 다음 Epic에 남긴 배움
 
-`roadmap.md`와 `STATUS.md`에는 현재 Epic·백로그만 남긴다. 종료된 상세를 현재 계획에 되살려 넣지 않는다.
+하위 폴더는 **첫 항목을 아카이브할 때 만든다** (`mkdir -p`). git은 빈 폴더를 담지 못한다.
+`docs/plan/roadmap.md`와 `docs/status/STATUS.md`에는 현재 마일스톤·백로그만 남긴다. 종료된 상세를 현재 계획에 되살려 넣지 않는다.

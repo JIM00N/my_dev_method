@@ -24,3 +24,4 @@
 ## 자동 검증
 
 - `scripts/check-docs.sh` — 문서 참조·경로 검사 (CI: `.github/workflows/docs-check.yml`)
+- `scripts/install-kit.sh` — 설치·병합·업그레이드 (신규/기존 `.claude/` 병합/`--upgrade` 3경로 수동 검증됨)

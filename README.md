@@ -47,8 +47,9 @@ CHANGELOG.md                방법론 자체의 변경 이력
 ## 빠른 시작
 
 1. 이 저장소를 클론합니다.
-2. 대상 제품 저장소 루트에 `templates/dev-kit`의 `AGENTS.md`, `CLAUDE.md`, `docs/`, `.claude/`를 복사합니다.
-   (훅 실행 권한은 커밋되어 있어 별도 chmod가 필요 없습니다. **기존 `.claude/`가 있는 저장소는 통째로 복사하지 말고 병합합니다** — templates/dev-kit/README.md의 설치 절 참조.)
+2. `scripts/install-kit.sh <제품 저장소 경로>`를 실행합니다 — `CLAUDE.md`·`AGENTS.md`·`docs/`·`.claude/`가 복사되고,
+   기존 `.claude/`가 있으면 통째로 덮지 않고 병합합니다(`settings.json`은 보존). 이미 키트를 쓰는 저장소는 `--upgrade`로
+   키트 소유 파일만 교체합니다. 손으로 하는 절차는 [templates/dev-kit/README.md](templates/dev-kit/README.md) 참조.
 3. `CLAUDE.md`의 프로젝트 이름·설명을 바꾸고 `docs/status/STATUS.md`를 시작 상태로 기록합니다.
 4. `docs/guides/S1-problem.md`부터 시작합니다. 사분면을 정한 직후 `docs/guides/profiles.md`로 프로파일을 판정합니다.
 5. 코드 작성 전 S4에서 `stack.md`, `architecture.md`, `code-conventions.md`를 확정하고, 품질 검사 명령을 실제로 한 번 실행합니다.

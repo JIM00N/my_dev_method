@@ -14,6 +14,15 @@ AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **
 
 ## 설치 (처음 적용하는 저장소)
 
+원본 저장소의 스크립트가 아래 전체(병합 포함)를 대신 수행한다:
+
+```bash
+/경로/my_dev_method/scripts/install-kit.sh <제품 저장소 경로>            # 설치
+/경로/my_dev_method/scripts/install-kit.sh <제품 저장소 경로> --upgrade  # 업그레이드
+```
+
+손으로 하려면:
+
 ```bash
 # 프로젝트 저장소 루트에서
 cp /경로/my_dev_method/templates/dev-kit/CLAUDE.md .
@@ -44,6 +53,7 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 
 ## 업그레이드 (이미 키트를 쓰는 저장소)
 
+`install-kit.sh --upgrade`가 아래 1~3을 대신 수행한다 (키트 소유만 교체, `CLAUDE.md`는 `CLAUDE.md.dev-kit-new`로 두어 수동 병합).
 `cp -R docs .`를 다시 실행하지 않는다 — 프로젝트가 쌓아온 spec·이슈·STATUS·ADR이 전부 파괴된다.
 
 1. `CLAUDE.md` 첫 줄 스탬프로 현재 버전을 확인한다.

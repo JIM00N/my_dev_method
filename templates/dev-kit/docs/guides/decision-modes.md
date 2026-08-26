@@ -63,6 +63,7 @@ revisit_when:
 - 기술 선택: `docs/spec/stack.md`
 - 되돌리기 어려운 선택: `docs/decisions/ADR-*.md`
 - 현재 세션의 열린 선택: `docs/status/STATUS.md`
+- 절차량 판정(프로파일): `docs/guides/profiles.md` — 이것도 하나의 기록된 기본 결정이다
 - 이 가이드의 적용은 S1~S4에서 특히 중요하다.
 
 **완료 조건**: 각 기술·권한·구조 선택이 학습 또는 실행 중 어느 모드였는지, 선택 이유와 재검토 조건이 추적 가능하다.

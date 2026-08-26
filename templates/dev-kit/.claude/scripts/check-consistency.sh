@@ -285,12 +285,17 @@ done < <(grep -rho --include='*.md' -E '`(docs|\.claude)/[A-Za-z0-9@_<>*./…-]+
 # 사이클·Story 문서가 테스트 이름을 인용하므로, 빼지 않으면 인용이 실재로 오인된다.
 G_GIT=0
 command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 && G_GIT=1
+# 폴백(비-git) 경로는 .gitignore 를 읽을 수 없다. 설치된 의존성·빌드 산출물 안에서 이름이 걸리면
+# 없는 테스트가 있는 것으로 통과해 — 검사가 느슨해지는 방향으로 — 속으므로 이름으로 뺀다.
+# (git 경로는 --untracked 가 .gitignore 를 존중하므로 이 목록이 필요 없다)
+G_SKIP=(--exclude-dir=docs --exclude-dir=.claude --exclude-dir=.git --exclude='*.md'
+        --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=dist
+        --exclude-dir=build --exclude-dir=target --exclude-dir=.venv)
 test_exists() { # $1 = 테스트 이름. 고정 문자열로 찾는다 (이름 형식을 모르므로 정규식을 쓰지 않는다)
   if [ "$G_GIT" = 1 ]; then
     git -C "$ROOT" grep --untracked -qF "$1" -- ':!docs' ':!.claude' ':!*.md' 2>/dev/null
   else
-    grep -rqF --exclude-dir=docs --exclude-dir=.claude --exclude-dir=.git --exclude='*.md' \
-      "$1" "$ROOT" 2>/dev/null
+    grep -rqF "${G_SKIP[@]}" "$1" "$ROOT" 2>/dev/null
   fi
 }
 while IFS= read -r row; do

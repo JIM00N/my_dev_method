@@ -16,10 +16,9 @@ argument-hint: [리뷰 범위. 생략하면 현재 작업 트리의 변경 전�
 ## 1단계 — 기계 검사
 
 ```bash
-scripts/check-docs.sh                                # 경로·참조 + 키트 훅/스크립트 문법 (.py 는 compile() 방식 — __pycache__ 를 남기지 않는다)
-find scripts .claude -name '*.sh' -exec bash -n {} + # check-docs.sh 범위 밖(루트 스크립트·리뷰 훅)의 셸 문법
-scripts/test-review-gate.sh                          # 커밋 게이트(도장·훅)의 적발·통과 실측
-scripts/test-consistency.sh                          # 정합성 검사 회귀 fixture
+scripts/check-docs.sh        # 경로·참조 + 셸 문법 + **훅 실행 권한** (`.githooks/*` 포함 — 권한이 빠지면 게이트가 조용히 fail-open 된다)
+scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 실측 + 뮤테이션 자기검증
+scripts/test-consistency.sh  # 정합성 검사 회귀 fixture
 ```
 
 > 1단계는 **CI(`.github/workflows/docs-check.yml`)와 같은 검사여야 한다.** CI에 스텝이 추가되면 여기에도 추가한다 —

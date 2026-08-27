@@ -99,7 +99,9 @@ Lite는 **설계 문서를 줄이는 것**이지 검증과 학습을 줄이는 �
 
 - `docs/spec/product.md`의 프로파일 칸에 판정과 근거를 적는다.
 - `docs/status/STATUS.md` 머리말에 `**프로파일**: Lite | Standard | Full`을 둔다.
-- 승급하면 날짜와 계기를 `docs/status/STATUS.md`의 최근 결정에 한 줄 남긴다.
+- 승급하면 날짜와 계기를 **두 곳에** 남긴다: `docs/spec/product.md`의 **승급 이력 표**(영구 기록)와
+  `docs/status/STATUS.md`의 최근 결정 한 줄. 최근 결정은 5개까지만 남으므로 밀려 나가고,
+  **왜 이 프로파일인지의 근거는 표에 남는다.**
 
 ## 완료 조건 (DoD)
 

@@ -65,11 +65,17 @@ while IFS= read -r mode_path; do
     echo "실행 권한 없는 훅: $mode_path"
     fail=1
   fi
-done < <(cd "$ROOT" && git ls-files -s 'templates/dev-kit/.claude/hooks/*.sh' 'templates/dev-kit/.claude/scripts/*.sh' 'templates/dev-kit/.claude/scripts/*.py' 2>/dev/null | awk '{print $1" "$4}')
+done < <(cd "$ROOT" && git ls-files -s \
+          'templates/dev-kit/.claude/hooks/*.sh' 'templates/dev-kit/.claude/scripts/*.sh' 'templates/dev-kit/.claude/scripts/*.py' \
+          '.githooks/*' '.claude/scripts/*.sh' 'scripts/*.sh' 2>/dev/null | awk '{print $1" "$4}')
+# ↑ `.githooks/*` 를 반드시 포함한다: git 은 실행 권한 없는 훅을 **오류 없이 조용히 건너뛴다.**
+#   모드가 100644 로 커밋되면 커밋 게이트 전체가 fail-open 이 되는데, 회귀 fixture 는 임시 사본에
+#   chmod +x 를 걸고 돌리므로 그 회귀를 못 잡는다. 이 검사가 유일한 그물이다.
 
-# 4) 훅·스크립트·설정 문법
-for sh in "$KIT"/.claude/hooks/*.sh "$KIT"/.claude/scripts/*.sh; do
-  [ -e "$sh" ] || continue
+# 4) 훅·스크립트·설정 문법 (배포물 + 이 저장소 자신의 게이트·스크립트)
+for sh in "$KIT"/.claude/hooks/*.sh "$KIT"/.claude/scripts/*.sh \
+          "$ROOT"/.githooks/* "$ROOT"/.claude/scripts/*.sh "$ROOT"/scripts/*.sh; do
+  [ -f "$sh" ] || continue
   bash -n "$sh" || { echo "문법 오류: $sh"; fail=1; }
 done
 # .py 는 py_compile 대신 compile() 로 본다 — __pycache__ 를 남기지 않기 위해서다

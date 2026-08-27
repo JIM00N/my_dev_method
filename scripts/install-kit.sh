@@ -160,7 +160,7 @@ if [ "$MODE" = "install" ]; then
   cat <<'NEXT'
 
 설치 완료. 이어서 할 일:
-  1. CLAUDE.md 상단의 <프로젝트명>, <한 줄 설명> 치환
+  1. CLAUDE.md 상단 첫 두 줄(제목·한 줄 설명)을 프로젝트 것으로 바꾼다
   2. docs/status/STATUS.md에 시작 시점 기록
   3. (업무 자동화·AX 프로젝트면) docs/guides/addons/business-automation.md 확인 (CLAUDE.md 라우팅 표에 연결돼 있다)
   4. Claude Code에서 /hooks 로 훅 등록 확인
@@ -191,7 +191,8 @@ else
   if ! cmp -s "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"; then
     cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md.dev-kit-new"
     note "⚠ CLAUDE.md는 자동 교체하지 않았다 (프로젝트명·§6 고유 규칙 보존)."
-    note "  새 판을 CLAUDE.md.dev-kit-new 로 두었다. diff로 비교해 규칙 부분만 옮기고 지워라."
+    note "  새 판을 CLAUDE.md.dev-kit-new 로 두었다. **새 판으로 교체한 뒤 프로젝트명과 §6 고유 규칙만 되살려라**"
+    note "  (라우팅 표·절대 규칙이 바뀌었을 수 있다 — '규칙 부분만' 옮기면 §1 라우팅 표 변경을 놓친다)."
   fi
   cat <<NEXT
 

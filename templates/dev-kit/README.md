@@ -1,6 +1,6 @@
 # dev-kit — AI 개발 지시서 템플릿
 
-**버전: 0.5.0** (각 배포본의 버전은 `CLAUDE.md` 첫 줄의 `<!-- dev-kit v… -->` 스탬프로 확인한다)
+**버전: 0.6.0** (각 배포본의 버전은 `CLAUDE.md` 첫 줄의 `<!-- dev-kit v… -->` 스탬프로 확인한다)
 
 AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **범용 지시서 + 문서 골격 + 강제 장치** 세트.
 `my_dev_method` 저장소가 원본이며, 대상 프로젝트 저장소에 복사해서 쓰는 배포본이다.
@@ -52,7 +52,7 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 
 복사 후 할 일:
 
-1. `CLAUDE.md` 상단의 `<프로젝트명>`, `<한 줄 설명>` 치환 (`AGENTS.md`는 호환용 진입점으로 그대로 둠)
+1. `CLAUDE.md` 상단 첫 두 줄(제목·한 줄 설명)을 프로젝트 것으로 치환 (`AGENTS.md`는 호환용 진입점으로 그대로 둠)
 2. `docs/status/STATUS.md`에 시작 시점 기록
 3. `jq` 설치 확인 (`jq --version`) — 없으면 guard 훅 2개가 경고만 남기고 통과한다
 4. 업무 자동화·AX 컨설팅 프로젝트면 `docs/guides/addons/business-automation.md`를 확인한다 (`CLAUDE.md` 라우팅 표에 이미 연결되어 있다)

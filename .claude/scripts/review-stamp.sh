@@ -12,13 +12,26 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MARK="$ROOT/.claude/.kit-review-pass"
 
+# 임시 인덱스는 **디렉토리 안**에 만든다 (mktemp -d 는 0700 으로 만들어진다).
+# `mktemp` 로 파일을 만든 뒤 지우고 그 이름을 git 에 넘기면 그 틈에 남이 끼어들 수 있었다(TOCTOU).
+#
+# 트랩에 대해 (이슈 #100 — 여기서 두 번 틀렸다):
+#  ① 트랩은 **이 함수 안**에 건다. `t="$(prospective_tree)"` 의 명령치환 **서브셸**에서 도는데,
+#     바깥에 걸면 부모의 핸들러가 서브셸에서 대입된 값을 못 봐서 **아무것도 정리하지 않는다.**
+#  ② 신호 목록은 **EXIT 하나뿐**이다. bash 3.2 는 EXIT 트랩만으로도 SIGINT/TERM/HUP 에서 돌고,
+#     `INT TERM HUP` 을 덧붙이면 핸들러가 `exit` 를 안 하는 한 **신호를 삼켜** 스크립트가 계속 돌았다
+#     (그 결과 Ctrl-C 뒤에 "git 저장소가 아니거나 git 미설치"라는 **틀린 진단**이 나왔다).
+
 # 커밋될 전체 트리(모든 변경을 add 했을 때)의 object id. 실제 인덱스를 건드리지 않도록 임시 인덱스로 계산한다.
 prospective_tree() {
   command -v git >/dev/null 2>&1 || return 1
   git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
   local tmpidx rc tree
-  tmpidx="$(mktemp)" || return 1
-  rm -f "$tmpidx"   # git read-tree 가 새로 만든다 — 빈 파일은 유효 인덱스가 아니다
+  # `local` 로 두지 않는다 — 함수가 반환하면 지역 변수가 먼저 사라지고, 그 **뒤에** 서브셸의
+  # EXIT 트랩이 돌아 `set -u` 로 죽는다. 트랩 쪽도 빈 값을 견디게 감싼다.
+  _stamp_tmpdir="$(mktemp -d)" || return 1
+  trap '[ -n "${_stamp_tmpdir:-}" ] && rm -rf "$_stamp_tmpdir"' EXIT
+  tmpidx="$_stamp_tmpdir/index"   # 아직 없는 경로 — git read-tree 가 새로 만든다
   rc=0
   if git -C "$ROOT" rev-parse -q --verify HEAD >/dev/null 2>&1; then
     GIT_INDEX_FILE="$tmpidx" git -C "$ROOT" read-tree HEAD || rc=1
@@ -28,7 +41,7 @@ prospective_tree() {
   [ "$rc" = 0 ] && { GIT_INDEX_FILE="$tmpidx" git -C "$ROOT" add -A || rc=1; }
   tree=""
   [ "$rc" = 0 ] && { tree="$(GIT_INDEX_FILE="$tmpidx" git -C "$ROOT" write-tree)" || rc=1; }
-  rm -f "$tmpidx"
+  rm -rf "$_stamp_tmpdir"; _stamp_tmpdir=""
   [ "$rc" = 0 ] && [ -n "$tree" ] || return 1
   printf '%s\n' "$tree"
 }

@@ -199,7 +199,10 @@ def pick_sections(text, names, with_heading=True, lv=2):
     h = "#" * lv
     out, seen = [], set()
     for nm in names:
-        m = re.search(r"^%s\s+%s.*?$(.*?)(?=^%s |\Z)" % (h, re.escape(nm), h), text, re.M | re.S)
+        # 끊는 조건은 **같은 깊이 이상의 모든 헤딩**이다. `^### ` 만 보면 `## ` 를 못 넘어
+        # 뒤따르는 절들이 통째로 이 절에 딸려 들어온다 (이슈 #121).
+        stop = "|".join("^%s " % ("#" * k) for k in range(1, lv + 1))
+        m = re.search(r"^%s\s+%s.*?$(.*?)(?=%s|\Z)" % (h, re.escape(nm), stop), text, re.M | re.S)
         if not m or not m.group(1).strip() or m.start() in seen:
             continue
         seen.add(m.start())  # 같은 절을 이름만 달리해 두 번 넣지 않는다
@@ -208,7 +211,14 @@ def pick_sections(text, names, with_heading=True, lv=2):
 
 
 def story_slots():
-    """Story 의 개발 준비 슬롯(1-1절)을 모아 그린다. Lite 는 Story 가 없으므로 사이클 문서를 본다."""
+    """개발 준비 슬롯을 모아 그린다 — Story 문서의 1-1절과 사이클 문서의 축약 슬롯을 **둘 다** 본다.
+
+    둘은 배타가 아니라 공존한다. 어떤 항목이 Story 문서를 갖는지는
+    `docs/guides/profiles.md` 「Story 문서」 행이 정하는데, Standard 는 일부만 문서를 갖고
+    나머지는 사이클 문서의 축약 슬롯에 남는다. Story 문서를 하나 찾았다고 사이클 쪽을 건너뛰면
+    그 모드에서 리포트가 반쪽이 되고, `docs/guides/ready.md` DoD 의 "리포트를 확인했다"가
+    보지 못한 슬롯을 확인한 것으로 통과해 버린다.
+    """
     out = []
     sdir = os.path.join(ROOT, "docs", "plan", "stories")
     files = sorted(f for f in os.listdir(sdir)
@@ -220,9 +230,7 @@ def story_slots():
             continue
         title = (re.search(r"^#\s+(.+)$", txt, re.M) or [None, f])[1]
         out.append("<h3>%s</h3>%s" % (html.escape(title), md(m.group(1))))
-    if out:
-        return "\n".join(out)
-    # Lite — 사이클 문서의 축약 슬롯
+    # 사이클 문서의 축약 슬롯 — Story 문서를 만들지 않은 항목이 여기 남는다 (Lite 는 전부가 여기다)
     cdir = os.path.join(ROOT, "docs", "plan", "cycles")
     cfiles = sorted(f for f in os.listdir(cdir)
                     if f.endswith(".md") and "template" not in f) if os.path.isdir(cdir) else []
@@ -230,7 +238,9 @@ def story_slots():
         body = pick_sections(rd("docs", "plan", "cycles", f),
                              ["개발 준비 슬롯"], with_heading=False, lv=3)
         if body.strip():
-            out.append("<h3>%s</h3>%s" % (html.escape(f), md(body)))
+            cur = " · **현재 사이클**" if f == cfiles[-1] else " · 종료(archive 전)"
+            out.append("<h3>%s — 축약 슬롯 (Story 문서를 만들지 않은 항목)%s</h3>%s"
+                       % (html.escape(f), cur, md(body)))
     return "\n".join(out)
 
 

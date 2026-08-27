@@ -8,7 +8,7 @@
 |---|---|---|
 | `roadmap.md` | 마일스톤 + **백로그** | 범위 밖 아이디어가 나올 때마다 |
 | `cycles/C<nn>-<이름>.md` | 사이클별 실행 계획 | 사이클 시작 시 생성 |
-| `stories/ST-<nnn>-<이름>.md` | Story의 영향 범위·권한 계약·검증 방법 | 권한 영향이 있거나 병렬로 돌릴 작업일 때 |
+| `stories/ST-<nnn>-<이름>.md` | Story의 영향 범위·권한 계약·검증 방법 | `docs/guides/profiles.md` 「Story 문서」 행이 정하는 대상일 때 |
 | `archive/index.md` | 완료된 사이클·Story 기록의 카탈로그·탐색 | 종료된 계획을 현재 계획에서 뺄 때 |
 
 ## 핵심 원칙

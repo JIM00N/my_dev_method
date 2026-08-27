@@ -11,5 +11,9 @@ jobs:
         run: bash scripts/check-docs.sh
       - name: 리뷰 게이트 회귀 검사
         run: bash scripts/test-review-gate.sh
-      - name: 정합성 검사 H 회귀 검사
+      - name: 정합성 검사 회귀 검사 (H · 준비도 롤업)
         run: bash scripts/test-consistency.sh
+      - name: 리포트 회귀 검사
+        run: bash scripts/test-report.sh
+      - name: 문서 검사 회귀 검사 (check-docs.sh 각 분기가 붉어지는가)
+        run: bash scripts/test-docs-check.sh

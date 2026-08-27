@@ -130,6 +130,40 @@ if "$STAMP" --verify; then echo "실패[--verify]: 도장 없는데 0 반환"; f
 if PATH=/nonexistent "$STAMP" --verify 2>/dev/null; then echo "실패[degrade]: git 없는데 --verify 가 0 반환"; fail=1; fi
 if PATH=/nonexistent "$STAMP" --write  2>/dev/null; then echo "실패[degrade]: git 없는데 --write 가 도장을 찍었다"; fail=1; fi
 
+# 12-b) 시그널 중단에 임시 인덱스가 남지 않는다 (이슈 #100 · #125)
+#   1회전 리뷰에서 `trap` 을 붙였는데 **아무것도 정리하지 않았다** — `TMPIDX_DIR` 이 명령치환
+#   서브셸에서만 대입돼 부모 핸들러는 늘 빈 값을 봤다. 게다가 `INT TERM HUP` 을 덧붙인 탓에
+#   신호가 삼켜져 Ctrl-C 뒤에 **틀린 진단**까지 냈다. 그 회귀를 잡는 자리가 여기다.
+sigdir="$(mktemp -d)"
+mkdir -p "$sigdir/bin"
+# git add 를 느리게 만들어 그 사이에 신호를 넣는다
+printf '#!/usr/bin/env bash\nfor a in "$@"; do [ "$a" = add ] && sleep 5; done\nexec %s "$@"\n' \
+  "$(command -v git)" > "$sigdir/bin/git"
+chmod +x "$sigdir/bin/git"
+before="$(ls -A "${TMPDIR:-/tmp}" | sort)"
+# **별도 프로세스 그룹**에서 돌린다. `set -m` 없이 프로세스 그룹에 신호를 보내면
+# 이 검사 스크립트 자신까지 죽는다(실측 exit 130).
+env PATH="$sigdir/bin:$PATH" S="$STAMP" bash -c '
+  set -m
+  "$S" --write >/dev/null 2>&1 &
+  p=$!
+  sleep 2
+  pg=$(ps -o pgid= -p $p 2>/dev/null | tr -d " ")
+  self=$(ps -o pgid= -p $$ 2>/dev/null | tr -d " ")
+  if [ -n "$pg" ] && [ "$pg" != "$self" ]; then kill -INT -"$pg" 2>/dev/null; else kill -INT "$p" 2>/dev/null; fi
+  wait $p
+' >/dev/null 2>&1 || true
+sleep 1
+after="$(ls -A "${TMPDIR:-/tmp}" | sort)"
+leaked="$(comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") | grep -c '^tmp\.' || true)"
+if [ "${leaked:-0}" -gt 0 ]; then
+  echo "실패[시그널]: SIGINT 로 죽은 뒤 임시 인덱스 디렉토리가 남았다 ($leaked 개)"
+  fail=1
+  comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") \
+    | grep '^tmp\.' | while IFS= read -r x; do rm -rf "${TMPDIR:-/tmp:?}/$x"; done
+fi
+rm -rf "$sigdir"
+
 # 13) 뮤테이션 자기검증 — 게이트를 끄면 '차단'됐던 커밋이 통과해야 한다(차단 판정이 hollow 가 아님을 증명)
 git reset -q --hard HEAD
 uniq_stage cmut

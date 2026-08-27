@@ -47,10 +47,36 @@
 
 K1 약속–강제 대조 · K2 우회 재현(실행 기반) · K3 셸 정확성 · K4 수명주기 경로 ·
 K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `kit-refute`가 반증을 시도한 뒤에만 확정된다.
+**반증 경유에는 기계 장치가 없다** — 절차이고, 관측되는 흔적은 `issues.md` 회전 표의 반증 결과 칸뿐이다
+(`.claude/commands/kit-review.md` 3단계가 정본).
+
+## 이 저장소에서 밟은 셸 함정 (다시 밟지 않는다)
+
+- **`$변수` 뒤에 곧바로 멀티바이트 문자를 쓰지 않는다** — bash 가 그 바이트를 변수명에 붙여 읽어
+  `set -u` 아래에서 죽는다. `「$sect」`가 아니라 `「${sect}」`. 검사기에서 이러면 **보고 경로만 죽어**
+  검사가 아무것도 못 잡는 상태가 된다 (2026-08-27 실측).
+- **awk 로 한글 문자열을 `==` 비교하지 않는다** — macOS 기본 awk(20200816)는 비-ASCII 문자열 둘을
+  무조건 같다고 판정한다. `index()`는 정상이다. 표 처리는 순수 bash 로 한다
+  (`templates/dev-kit/.claude/scripts/check-consistency.sh` 33행에 같은 경고가 있다).
+- **줄 단위 grep 으로 여러 줄에 걸친 호출을 뽑지 않는다** — 추출 0건이면 검사가 **통과로 위장**한다.
+  추출 결과가 비면 그 자체를 실패 신호로 낸다.
 
 ## 자동 검증
 
-- `scripts/check-docs.sh` — 키트 내부 경로·참조·문법 (CI: `.github/workflows/docs-check.yml`)
-- `scripts/test-review-gate.sh` — 커밋 게이트(pre-commit 훅·도장)의 우회 차단을 실측하는 회귀 검사 (CI 연결)
+- `scripts/check-docs.sh` + `scripts/check-docs.py` — 경로·참조(키트 + **이 저장소 자신**) ·
+  **절 이름 포인터** · **축↔에이전트 대응** · 쓰기 도구 에이전트의 임시 디렉토리 제한 ·
+  **셸 함정 lint** · 훅/스크립트 실행 권한 · 문법 · (로컬) `issues.md` 번호 유일성
+  (CI: `.github/workflows/docs-check.yml`)
+- `scripts/test-docs-check.sh` — **위 검사 자신의** 회귀 fixture: 분기마다 위반을 심어 붉어지는지 실측 (CI)
+- `scripts/test-review-gate.sh` — 커밋 게이트(pre-commit 훅·도장)의 우회 차단·시그널 정리 실측 (CI)
+- `scripts/test-consistency.sh` — 정합성 검사 회귀 fixture: H 마일스톤 배치 · 준비도 롤업 (CI)
+- `scripts/test-report.sh` — `report.py` 회귀 fixture: Story 문서 ↔ 사이클 축약 슬롯 공존 모드 (CI)
 - `.githooks/pre-commit`·`pre-merge-commit` — **에이전트 셸에서** 도장과 다른 트리의 커밋·병합 차단
   (절대 규칙 1의 장치, `core.hooksPath`로 활성. 사용자 커밋은 막지 않는다)
+
+> **검사를 새로 넣으면 그 검사가 붉어지는 fixture를 같이 넣는다.** 예외 없다.
+> 한때 여기에 *"`check-docs.sh`는 검사기 자신이라 자기검증이 없다 — 손으로 뮤테이션을 돌려 확인한다"*고
+> 적혀 있었다. **그 정책은 바로 다음 변경에서 실패했다** — 새로 넣은 검사 셋이 아무것도 못 잡는 상태로
+> 커밋 직전까지 왔고, 손으로 돌린 확인은 저장소에 안 남아 아무것도 막지 못했다.
+> 절대 규칙 3의 후단("못 만들면 권고로 고쳐 쓴다")은 **정말 못 만들 때만** 쓴다 —
+> 만들 수 있는데 안 만들고 한계를 적는 것은 규칙을 지킨 게 아니라 **우회한 것**이다.

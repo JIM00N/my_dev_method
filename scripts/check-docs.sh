@@ -1,13 +1,39 @@
 #!/usr/bin/env bash
-# 문서 참조 검사 — templates/dev-kit 안의 경로 참조가 실재하는지 확인한다.
+# 문서 참조 검사 — 문서가 가리키는 것이 실재하는지 확인한다.
 # 통과 기준:
-#  1) 백틱 참조 `docs/...` `.claude/...` `CLAUDE.md` `AGENTS.md` 가 templates/dev-kit 기준으로 존재
-#  2) 마크다운 링크 [..](상대경로) 가 각 파일 기준으로 존재
+#  1)   백틱 참조 `docs/...` `.claude/...` `CLAUDE.md` `AGENTS.md` 가 templates/dev-kit 기준으로 존재
+#  1-b) 키트 문서의 백틱 경로가 `docs/…` 관례를 지킴
+#  1-c) **이 저장소 자신의 문서**(루트·`.claude/**`·`guides/**`)의 백틱 경로도 실재
+#  2)   마크다운 링크 [..](상대경로) 가 각 파일 기준으로 존재
+#  3)   훅·스크립트 실행 권한이 커밋되어 있음
+#  4)   셸·파이썬·JSON 문법
+#  5)   `파일.md` 「절 이름」 포인터의 절 이름이 그 파일에 실재
+#  6)   report.py 가 하드코딩한 절 이름이 키트 양식에 실재
+#  7)   `/kit-review` 축↔에이전트 표와 `.claude/agents/*.md` 실물이 일치
+#  8)   (로컬 전용) issues.md 의 이슈 번호가 유일
+#  9)   쓰기 도구를 가진 리뷰 에이전트에 임시 디렉토리 제한 문장이 있음
+#  10)  이 저장소에서 밟은 셸 함정 재발 lint ($변수+멀티바이트 · awk 한글 ==)
+# 1-c·5~10 은 `scripts/check-docs.py` 가 맡는다 (로케일·멀티바이트 안전).
+# 각 분기가 붉어지는 증거는 `scripts/test-docs-check.sh` 에 있다.
 # 플레이스홀더(<n>, C<nn>, ST-<nnn>, ADR-<nnn>, *, 예시 경로)는 검사하지 않는다.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KIT="$ROOT/templates/dev-kit"
 fail=0
+
+# 이 저장소 자신의 문서 목록 (키트 배포물 제외).
+# `.gitignore` 된 로컬 전용 문서(issues.md·handoff-*.md)는 뺀다 — CI 에는 존재하지 않는 파일이라
+# 여기서 잡으면 **로컬만 붉어지고 CI 는 조용한** 어긋난 검사가 된다 (1단계 == CI 원칙).
+repo_docs() {
+  local list
+  list=$(find "$ROOT" -name '*.md' -not -path '*/.git/*' -not -path "$KIT/*" -not -path '*/manyfast_reference/*')
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf '%s\n' "$list" | git -C "$ROOT" check-ignore --stdin --non-matching --verbose 2>/dev/null \
+      | sed -n 's/^::'$'\t''//p'
+  else
+    printf '%s\n' "$list"
+  fi
+}
 
 is_placeholder() {
   case "$1" in
@@ -80,7 +106,7 @@ for sh in "$KIT"/.claude/hooks/*.sh "$KIT"/.claude/scripts/*.sh \
 done
 # .py 는 py_compile 대신 compile() 로 본다 — __pycache__ 를 남기지 않기 위해서다
 if command -v python3 >/dev/null 2>&1; then
-  for py in "$KIT"/.claude/scripts/*.py; do
+  for py in "$KIT"/.claude/scripts/*.py "$ROOT"/scripts/*.py; do
     [ -e "$py" ] || continue
     python3 -c 'import sys;compile(open(sys.argv[1],encoding="utf-8").read(),sys.argv[1],"exec")' "$py" \
       || { echo "문법 오류: $py"; fail=1; }
@@ -88,6 +114,18 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 if command -v jq >/dev/null 2>&1; then
   jq . "$KIT/.claude/settings.json" >/dev/null || { echo "settings.json 파싱 실패"; fail=1; }
+fi
+
+# 1-c · 5 · 6 · 7 · 8 · 9 · 10 은 파이썬이 맡는다.
+# grep 부정 문자클래스가 C/POSIX 로케일에서 **바이트 클래스**가 되어 한글·em dash 안의 바이트에
+# 걸리고, 그때 추출이 0건이 되면서 검사가 조용히 "통과"를 냈다 (이슈 #101). BSD awk 의 한글 `==`
+# 버그(#098)도 같은 이유다. 파이썬은 인코딩을 명시적으로 다룬다.
+# **python3 은 필수다** — 없으면 건너뛰지 않고 실패한다. 조용히 안 도는 검사는 없는 검사다.
+if command -v python3 >/dev/null 2>&1; then
+  python3 "$ROOT/scripts/check-docs.py" || fail=1
+else
+  echo "python3 가 없어 문서·에이전트·셸 검사(1-c·5~10)를 돌릴 수 없다"
+  fail=1
 fi
 
 if [ "$fail" = 0 ]; then echo "문서 참조 검사 통과"; else exit 1; fi

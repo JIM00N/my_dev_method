@@ -16,7 +16,7 @@
 | `agents/error-learning.md` | 에러 종합·인제스트 전용 서브에이전트 (코드는 못 고친다) | `docs/guides/error-learning-ingest.md` |
 | `commands/adopt.md` | `/adopt [--sync]` — 계획 문서 찾기·도입·재동기화 (**진입점**) | `docs/guides/S0-adopt.md` |
 | `commands/plan.md` | `/plan` — 계획이 없을 때 키트가 직접 만든다 | `docs/guides/plan.md` |
-| `commands/ready.md` | `/ready` — 준비도 점검 (Story 슬롯 12칸: AI 초안 → 갈리는 것만 질문) | `docs/guides/ready.md` |
+| `commands/ready.md` | `/ready` — 준비도 점검 (Story 슬롯 12칸: AI 초안 → **크기 판정** → 갈리는 것만 질문) | `docs/guides/ready.md` |
 | `scripts/report.py` | md 를 읽어 보기 쉬운 HTML 한 장으로 (검사 아님) | `docs/reports/` |
 | `commands/stage.md` | `/stage [n]` — 단계 진입 | `CLAUDE.md` §0 |
 | `commands/review.md` | `/review` — 1단계 정합성 검사 + 2단계 코드리뷰 위임 | `docs/guides/S6-build.md` 3-4 |

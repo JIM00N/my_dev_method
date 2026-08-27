@@ -24,7 +24,7 @@
 | 세션 시작 / 뭘 할지 모를 때 | `docs/status/STATUS.md` | — |
 | **프로젝트를 시작할 때 (계획 문서 유무와 무관)** | `docs/guides/S0-adopt.md` | `/adopt` 실행 → `docs/spec/source-map.md` |
 | `/adopt`가 계획 문서를 못 찾았을 때 | `docs/guides/plan.md` | `/plan` 실행 → `docs/upstream/plan.md` |
-| **Story 를 열기 직전** | `docs/guides/ready.md` | `/ready` 실행 → Story 슬롯 12칸 · 매핑표 `준비` 칸 |
+| **Story 를 열기 직전** | `docs/guides/ready.md` | `/ready` 실행 → Story 슬롯 12칸 · **크기 판정** · 매핑표 `준비` 칸 |
 | 구현 중 "이럴 땐 어떻게 하지?"가 나왔을 때 | `docs/guides/ready.md` | `/ready` 실행 (지어내지 않는다) |
 | 어떤 요구사항 근거로 만드는지 확인할 때 | `docs/spec/source-map.md` | — |
 | 새 단계에 진입할 때 | `docs/guides/S<n>-*.md` | 해당 `docs/spec/*.md` |
@@ -91,7 +91,7 @@
 |---|---|---|---|
 | **S0** | **도입 — 계획 문서 찾아 받아들이기** | `docs/guides/S0-adopt.md` | `docs/upstream/` · `docs/spec/source-map.md` |
 | (S0 분기) | 계획이 없을 때 — 키트가 직접 만든다 | `docs/guides/plan.md` | `docs/upstream/plan.md` |
-| (사이클 전) | 준비도 점검 — 답이 없는 칸을 지금 찾는다 | `docs/guides/ready.md` | Story 슬롯 12칸 · 매핑표 `준비` 칸 |
+| (사이클 전) | 준비도 점검 — 답이 없는 칸을 찾고 Story 크기를 판정한다 | `docs/guides/ready.md` | Story 슬롯 12칸 · 크기 판정 · 매핑표 `준비` 칸 |
 | S1 | 문제·범위 정의 | `docs/guides/S1-problem.md` | `docs/spec/product.md` |
 | S2 | 도메인·데이터·상태 | `docs/guides/S2-domain.md` | `docs/spec/domain.md` |
 | S3 | 인터페이스 설계 | `docs/guides/S3-interface.md` | `docs/spec/interface.md` |

@@ -144,21 +144,35 @@ expect_red "파일명과 frontmatter name 불일치를 잡는다" "$d" "name"
 
 echo
 echo "검사 8 — issues.md 이슈 번호 유일성"
-d=$(mkfx); printf '| #001 | 높음 | 중복 심기 | 진단 | 열림 |\n' >> "$d/issues.md"
+# `issues.md` 는 `.gitignore` 대상이라 **CI 체크아웃에는 없다.** 실물에 append 하면
+# 로컬에서만 도는 fixture 가 된다 — 실제로 그렇게 만들었다가 CI 에서 붉어졌다(#153).
+# 그래서 **합성 issues.md 를 통째로 써 넣는다**: 실물 유무와 무관하게 같은 것을 잰다.
+synth_issues() { # $1 = fixture 경로, $2 = 행 묶음
+  { printf '# 이슈 로그 (합성)\n\n## 열린 이슈\n\n'
+    printf '| # | 심각도 | 한 줄 | 출처 | 상태 |\n|---|---|---|---|---|\n'
+    printf '%s\n' "$2"
+  } > "$1/issues.md"
+}
+
+d=$(mkfx); synth_issues "$d" '| #001 | 높음 | 첫 줄 | 진단 | 열림 |
+| #002 | 보통 | 둘째 줄 | 진단 | 열림 |
+| #001 | 높음 | 같은 번호를 다시 썼다 | 진단 | 열림 |'
 expect_red "중복 번호를 잡는다" "$d" "이슈 번호 중복"
 
-d=$(mkfx); printf '|  #001  | 높음 | 공백 변형 중복 | 진단 | 열림 |\n' >> "$d/issues.md"
+d=$(mkfx); synth_issues "$d" '| #001 | 높음 | 첫 줄 | 진단 | 열림 |
+|  #001  | 높음 | 공백 변형 중복 | 진단 | 열림 |'
 expect_red "**공백 변형**도 잡는다 (#149)" "$d" "이슈 번호 중복"
 
-d=$(mkfx)
-python3 - "$d/issues.md" <<'PY'
-import re, sys
-p = sys.argv[1]
-s = open(p, encoding='utf-8').read()
-s = re.sub(r'^\| (#\d{3}) \|', r'| 2026 | \1 |', s, flags=re.M)
-open(p, 'w', encoding='utf-8').write(s)
-PY
+d=$(mkfx); synth_issues "$d" '| #001 | 높음 | 첫 줄 | 진단 | 열림 |
+| #002 | 보통 | 둘째 줄 | 진단 | 열림 |'
+expect_green "번호가 유일하면 조용하다 (경계값)" "$d"
+
+d=$(mkfx); synth_issues "$d" '| 2026 | #001 | 앞에 열이 하나 늘었다 | 진단 | 열림 |
+| 2026 | #002 | 표 형식이 바뀌면 추출이 0건이 된다 | 진단 | 열림 |'
 expect_red "이슈 행을 한 건도 못 찾으면 **통과로 위장하지 않는다** (#102)" "$d" "이슈 행을 한 건도 찾지 못했다"
+
+d=$(mkfx); rm -f "$d/issues.md"
+expect_green "issues.md 가 없으면(CI 가 그렇다) 조용히 건너뛴다" "$d"
 
 echo
 echo "검사 9 — Write 를 가진 에이전트의 임시 디렉토리 제한"

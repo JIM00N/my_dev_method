@@ -20,6 +20,7 @@ description: 사이클 종료 점검 — DoD 대조, 코드리뷰, 스펙 드리
    **검증됨 상태의 이슈는 `docs/quality/archive/<유형>/`으로 옮기고** `issues.md`의 유형별 집계를 갱신한다 (폴더가 없으면 만든다).
 7. `error-learning` 서브에이전트를 띄워 새 에러 기록을 인제스트시키고, 돌아온 guide·spec·ADR 변경 제안의 영향 범위를 검토한 뒤 반영 여부를 결정한다.
 8. 완료된 사이클·Story 문서를 `docs/plan/archive/cycles/`·`docs/plan/archive/stories/`로 옮긴다 (폴더가 없으면 만든다).
+   `docs/plan/index.md`의 사이클 현황 표에서 이 사이클 행의 상태·배포·종료일을 갱신한다 (표 유지 규칙은 그 표 아래에 있다).
    마일스톤이 끝났으면 `docs/plan/roadmap.md`의 마일스톤 상태를 갱신한다.
 9. `docs/plan/roadmap.md` 백로그가 30건을 넘으면 우선순위 낮음부터 정리한다 — "명시적으로 안 만들기로 한 것"으로 옮기거나 지운다.
 9-1. **마일스톤이 이번에 닫혔으면 상태를 갱신하고 다음 마일스톤을 연다.** ★
@@ -30,7 +31,7 @@ description: 사이클 종료 점검 — DoD 대조, 코드리뷰, 스펙 드리
 10. `docs/status/STATUS.md`를 갱신한다 — 최종 갱신, 현재 사이클, 다음 3가지, 열린 이슈.
 11. 리포트를 만들어 사용자에게 보인다 — `python3 .claude/scripts/report.py cycle`.
     `docs/reports/cycle-<날짜>.html` 경로를 알려주고 확인을 받는다. **사람이 판정해야 하는 결과는 md 로만 보고하지 않는다.**
-12. 다음 사이클 문서를 `C00-template.md`에서 만든다.
+12. 다음 사이클 문서를 `C00-template.md`에서 만들고, `docs/plan/index.md`의 사이클 현황 표에 행을 추가한다.
 13. **다음 사이클에 올릴 것의 준비도를 확인한다** — `/adopt --sync` → `/ready`.
     판정은 한 번 하고 끝나지 않는다. 사이클을 여는 시점의 상류를 근거로 다시 본다.
     `준비` 칸에 `❌`가 남은 것은 다음 사이클에 올리지 않는다.

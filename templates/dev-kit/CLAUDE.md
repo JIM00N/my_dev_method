@@ -29,6 +29,7 @@
 | 어떤 요구사항 근거로 만드는지 확인할 때 | `docs/spec/source-map.md` | — |
 | 새 단계에 진입할 때 | `docs/guides/S<n>-*.md` | 해당 `docs/spec/*.md` |
 | S1에서 사분면을 확정한 직후 | `docs/guides/profiles.md` | `docs/spec/product.md` 프로파일 칸 |
+| **커밋하기 직전 (매번)** | `docs/spec/product.md` 커밋 정책 칸 | 승인 모드면 **묻는다** · 보고 모드면 커밋 후 **보고한다** (`docs/guides/commit-policy.md`) |
 | 절차가 무겁게 느껴질 때 | `docs/guides/profiles.md` | — (프로파일을 낮추지 말고 확인한다) |
 | 새 기술·권한·구조 결정을 할 때 | `docs/guides/decision-modes.md` | `docs/spec/stack.md` 또는 ADR |
 | 코드를 한 줄이라도 쓰기 전 | `docs/spec/stack.md`, `docs/spec/architecture.md`, `docs/spec/code-conventions.md` | — |
@@ -70,6 +71,13 @@
     리뷰는 `/review`(`code-review` 서브에이전트)가 이 표를 기준으로 잡는다.
 12. **비밀값을 코드·저장소에 넣지 않는다.** 키·비밀번호·토큰은 환경 변수나 비밀값 관리 도구에 두고 코드에서는 참조만 한다.
     `.env` 류는 형상 관리에서 제외한다 (`.env.example`만 남긴다). 유출됐으면 즉시 폐기·재발급한다.
+13. **커밋 정책을 지킨다.** ★ 정본은 `docs/spec/product.md`의 커밋 정책 칸이다 (`docs/guides/commit-policy.md`).
+    **승인 모드**면 리뷰 통과 뒤 **묻고 답을 받아야** 커밋하고, **보고 모드**면 커밋한 뒤 **결과를 보고한다.**
+    물을 때도 보고할 때도 **전문 용어가 아니라 무엇이 바뀌었는지·리뷰 결과·남은 지적**을 준다 —
+    재료 없이 물으면 판정이 아니라 형식이 된다. 어느 모드든 **`/review` 통과 없이 커밋하지 않는다.**
+    **모드와 무관하게 승인받는 것**의 정본은 `commit-policy.md`의 「어느 쪽이든 반드시 묻는 것」 표다 —
+    push·배포·태그 · **이력 재작성**(force push, 이미 push된 커밋의 amend·rebase) · 되돌릴 수 없는 외부 행동.
+    번거롭다는 이유로 모드를 임의로 바꾸지 않는다 (규칙 11과 같은 계열).
 
 ## 3. 진행 상태 어휘 (고정)
 
@@ -120,7 +128,7 @@
 
 | 스크립트 | 무엇을 잡나 | 언제 |
 |---|---|---|
-| `.claude/scripts/check-consistency.sh` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 | `/review` 1단계 · 사이클 시작·종료 · CI |
+| `.claude/scripts/check-consistency.sh` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 · **마일스톤 배치** | `/review` 1단계 · 사이클 시작·종료 · CI |
 | `.claude/scripts/report.py` | (검사 아님) md를 읽어 보기 쉬운 HTML 한 장으로 그린다 | `/adopt`·`/plan`·`/ready`·`/cycle-close` 끝 |
 
 **문서 정합성은 사람도 서브에이전트도 아니라 이 스크립트가 지킨다.** 기계가 확정적으로 잡을 수 있는 것을

@@ -28,3 +28,6 @@ venv/
 manyfast_reference/
 # 생성되는 HTML 리포트 — 정본은 md 다 (.claude/scripts/report.py 가 매번 다시 만든다)
 docs/reports/
+
+# 로컬 전용 — /kit-review 통과 도장 (review-stamp.sh 가 쓰고 .githooks/pre-commit 이 대조한다)
+/.claude/.kit-review-pass

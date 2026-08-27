@@ -9,6 +9,7 @@
 #   E. 화면 정합            화면 ID 가 docs/spec/interface.md 에 실제로 있는가
 #   F. 참조 깨짐            백틱 `docs/…` 참조가 실재하는가
 #   G. 테스트 실재          매핑표 테스트 칸의 이름이 코드에 실제로 있는가
+#   H. 마일스톤 배치       모든 요구사항이 마일스톤에 배치됐는가 · 마일스톤 크기 신호 (경고)
 #
 # 정본: docs/spec/source-map.md (요구사항·화면 매핑표)
 # 실행: /review 1단계 · 사이클 시작 · /cycle-close · CI
@@ -311,6 +312,70 @@ while IFS= read -r row; do
       bad "$id — 테스트 '$t' 가 매핑표에는 있는데 코드에는 없다. 이름만 적으면 개수 검사가 속는다 → 그 이름으로 테스트를 쓰거나(RED 먼저), 잘못 적었으면 칸을 고친다"
   done
 done < <(req_rows)
+
+# ── H. 마일스톤 배치 ─────────────────────────────────────────────────────
+# 마일스톤은 상류가 주지 않는 축이다 — 계획 문서는 "무엇을"의 트리이지 "언제까지"가 아니다.
+# /adopt 7단계가 세우고, 배치가 비면 "언제 만들지 아무도 모르는 요구사항"이 되므로 실패시킨다.
+# 크기 신호(사이클 5바퀴 초과 · 요구사항 1개)는 경고다 — 다시 그으라는 신호이지 틀렸다는 판정이 아니다.
+# 사이클 수는 매핑표의 사이클 칸에서 센다 (roadmap 을 따로 파싱하지 않는다). 아직 배정 안 된
+# 요구사항은 사이클 칸이 비어 있어 낮게 잡히는데, 그건 "아직 계획 안 됨"이므로 맞는 동작이다.
+# 정본: docs/plan/index.md 핵심 원칙 5.
+i_ms=$(col_idx "$REQ_H" "마일스톤")
+if [ -z "$i_ms" ]; then
+  caution "요구사항 매핑표에 '마일스톤' 열이 없다 — 마일스톤 배치 검사를 건너뛴다 (docs/spec/source-map.md 2절)"
+else
+  ms_rows=""    # 요구사항마다 한 줄: 마일스톤
+  ms_pairs=""   # 마일스톤|사이클 한 줄씩 (뒤에서 sort -u 로 중복 제거)
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    id=$(cell "$row" "$i_id")
+    ms=$(cell "$row" "$i_ms")
+    cyc=$(cell "$row" "$i_cycle")
+    case "$ms" in
+      ''|'—'|'-')
+        bad "$id — 마일스톤 배치가 비었다. 언제 만들지 정해지지 않은 요구사항이다 → /adopt 7단계로 배치한다 (백로그가 아니라 매핑표 '마일스톤' 칸)"
+        continue ;;
+    esac
+    ms_rows="${ms_rows}${ms}
+"
+    case "$cyc" in
+      ''|'—'|'-') ;;
+      *)
+        IFS=',' read -r -a citems <<< "$cyc"
+        for c in ${citems[@]+"${citems[@]}"}; do
+          c=$(trim "$c")
+          [ -n "$c" ] || continue
+          ms_pairs="${ms_pairs}${ms}|${c}
+"
+        done ;;
+    esac
+  done < <(req_rows)
+
+  ms_pairs=$(printf '%s' "$ms_pairs" | sort -u)
+
+  # 마일스톤 이름에 공백이 있어도 깨지지 않게 줄 단위로 돈다 ($(...) 워드 스플리팅 금지)
+  while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    nreq=0
+    while IFS= read -r l; do
+      [ "$l" = "$m" ] && nreq=$((nreq + 1))
+    done < <(printf '%s' "$ms_rows")
+    ncyc=0
+    # ms_pairs 는 $(... | sort -u) 를 거쳐 후행 개행이 없다. '%s' 로 흘리면 마지막 줄이
+    # 개행 없이 끝나 read 가 그 줄을 세지 못하고 빠진다 — 검사가 느슨해지는 방향으로 틀린다.
+    while IFS= read -r l; do
+      [ -n "$l" ] || continue
+      [ "${l%%|*}" = "$m" ] && ncyc=$((ncyc + 1))
+    done < <(printf '%s\n' "$ms_pairs")
+
+    if [ "$ncyc" -gt 5 ]; then
+      caution "$m — 사이클이 ${ncyc}바퀴다. 마일스톤이 너무 크다는 신호 → docs/plan/index.md 핵심 원칙 5로 다시 긋는다"
+    fi
+    if [ "$nreq" -eq 1 ]; then
+      caution "$m — 요구사항이 1개뿐이다. 마일스톤이 사이클의 다른 이름이 됐다는 신호 → 합치거나 다시 긋는다"
+    fi
+  done < <(printf '%s' "$ms_rows" | sort -u)
+fi
 
 # ── 결과 ─────────────────────────────────────────────────────────────────
 echo

@@ -7,4 +7,4 @@
 
 | 문서 | 대상 | 내용 |
 |---|---|---|
-| [getting-started.md](getting-started.md) | 절차를 따를지 판단하려는 사람 | 각 장치가 **왜** 그 모양인지 — 세 개의 층, 리뷰 분리, STATUS 한 장, 프로파일, 두 개의 승격 |
+| [getting-started.md](getting-started.md) | 절차를 따를지 판단하려는 사람 | 각 장치가 **왜** 그 모양인지 — 네 개의 층, 리뷰 분리, STATUS 한 장, 프로파일, 두 개의 승격 |

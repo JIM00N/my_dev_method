@@ -26,6 +26,8 @@
 - 요구사항 추적: `docs/spec/source-map.md` → 요구사항 ID → 사이클 → 테스트 (검사는 `.claude/scripts/check-consistency.sh`)
 - 상류 동기화: `/adopt --sync` → 재검토 표시 → 사람 판정 → `docs/spec/domain.md` 등 갱신
 - 절차량 판정: `docs/spec/product.md`의 사분면 → `docs/guides/profiles.md` → 프로파일 (게이트는 각 가이드 DoD의 표식)
+- 커밋 관여도: S1에서 질문 → `docs/guides/commit-policy.md` → `docs/spec/product.md`·`docs/status/STATUS.md` 커밋 정책 칸
+  (**기계 장치는 없다** — 절대 규칙 13과 S1 DoD의 `(사람 확인)` 항목이 전부다)
 - 설계 방법: `docs/guides/index.md` → 현재 S1~S4 가이드
 - 설계 사실: `docs/spec/index.md` → source-map / product / domain / interface / stack / architecture / code-conventions / ui
 - 실행 계획: `docs/plan/index.md` → roadmap → 활성 cycles → 필요하면 stories

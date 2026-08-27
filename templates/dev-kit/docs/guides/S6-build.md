@@ -267,7 +267,10 @@
 - [ ] 열린 이슈를 다음 사이클로 넘기거나 백로그로 이동 (치명·높음이 열려 있으면 닫지 않는다)
 - [ ] 검증된 이슈를 `docs/quality/archive/<유형>/`으로 이동, 유형별 집계 갱신 (폴더가 없으면 만든다)
 - [ ] `/ingest-errors`로 학습 인제스트 → `docs/quality/rules-learned.md`에 이번에 배운 것이 반영됨
-- [ ] 사이클·Story 문서를 `docs/plan/archive/`로 이동 (폴더가 없으면 만든다). 마일스톤이 끝났으면 `docs/plan/roadmap.md` 상태 갱신
+- [ ] 사이클·Story 문서를 `docs/plan/archive/`로 이동 (폴더가 없으면 만든다)
+- [ ] **마일스톤이 끝났으면 `docs/plan/roadmap.md` 상태를 갱신하고 다음 마일스톤을 연다** —
+      S0에서 비워 둔 **「무엇이 되면 달성인가」와 목표 시점을 여기서 채운다.**
+      확인 가능한 한 문장으로 못 쓰면 그 마일스톤이 너무 크다 (`docs/plan/index.md` 핵심 원칙 5)
 - [ ] `docs/status/STATUS.md` 갱신
 - [ ] 다음 사이클 문서 생성
 

@@ -133,7 +133,8 @@ Lite는 Story 문서를 만들지 않으므로(`docs/guides/profiles.md`) 여기
 - [ ] `/ingest-errors` 실행 → 재발한 문제가 `docs/quality/rules-learned.md`에 반영됨
 - [ ] `docs/status/STATUS.md` 갱신
 - [ ] 다음 사이클 문서 생성
-- [ ] 이 문서와 종료된 Story를 `docs/plan/archive/`로 옮김 (폴더가 없으면 만든다). 마일스톤이 끝났으면 `docs/plan/roadmap.md` 상태 갱신
+- [ ] 이 문서와 종료된 Story를 `docs/plan/archive/`로 옮김 (폴더가 없으면 만든다)
+- [ ] 마일스톤이 끝났으면 `docs/plan/roadmap.md` 상태 갱신 + **다음 마일스톤의 달성 조건·목표 시점을 채움**
 
 ## 이번 사이클에서 배운 것
 

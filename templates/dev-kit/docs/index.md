@@ -55,6 +55,7 @@
 - `S5-ui.md` — 시각 설계 (화면 없으면 스킵)
 - `S6-build.md` — 구축·검수·배포 (TDD · 자동 테스트 승격 · 스펙 드리프트)
 - `profiles.md` — 사분면 → Lite/Standard/Full 절차량 판정
+- `commit-policy.md` — 커밋을 에이전트가 묻고 누를지(승인) 누르고 알릴지(보고). 사용자가 고른다
 - `decision-modes.md` — 기술·권한·구조 선택의 학습/실행 모드
 - `error-learning-ingest.md` — 새 에러 기록을 별도 에이전트가 종합·인제스트
 - `docs/guides/addons/business-automation.md` — 업무 자동화·AX 전용 추가 절차

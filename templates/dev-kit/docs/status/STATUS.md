@@ -9,6 +9,7 @@
 
 **최종 갱신**: YYYY-MM-DD HH:MM  ← 오늘 날짜가 아니면 훅이 세션 종료를 막는다
 **프로파일**: — (S1에서 판정 · `docs/guides/profiles.md`)
+**커밋 정책**: — (S1에서 사용자에게 물어 정함 · 승인 모드 / 보고 모드 · `docs/guides/commit-policy.md`)
 **현재 단계**: S1 문제·범위 정의 (1/6)
 **현재 사이클**: — (아직 없음)
 **다음에 읽을 가이드**: `docs/guides/S1-problem.md`

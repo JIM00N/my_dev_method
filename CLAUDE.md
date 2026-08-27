@@ -67,7 +67,9 @@ K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `kit-refute
   **절 이름 포인터** · **축↔에이전트 대응** · 쓰기 도구 에이전트의 임시 디렉토리 제한 ·
   **셸 함정 lint** · 훅/스크립트 실행 권한 · 문법 · (로컬) `issues.md` 번호 유일성
   (CI: `.github/workflows/docs-check.yml`)
-- `scripts/test-docs-check.sh` — **위 검사 자신의** 회귀 fixture: 분기마다 위반을 심어 붉어지는지 실측 (CI)
+- `scripts/test-docs-check.sh` — **위 검사 자신의** 회귀 fixture (CI). 30 케이스.
+  덮는 것은 **검사 1-c·5·6·7·8·9·10** 다 — 검사 1·1-b·2·3·4 는 아직 RED 증거가 없다(이슈 #159).
+  하필 검사 3(훅 실행 권한)은 스스로 «이 검사가 유일한 그물»이라 적은 자리다. **"각 분기"가 아니다.**
 - `scripts/test-review-gate.sh` — 커밋 게이트(pre-commit 훅·도장)의 우회 차단·시그널 정리 실측 (CI)
 - `scripts/test-consistency.sh` — 정합성 검사 회귀 fixture: H 마일스톤 배치 · 준비도 롤업 (CI)
 - `scripts/test-report.sh` — `report.py` 회귀 fixture: Story 문서 ↔ 사이클 축약 슬롯 공존 모드 (CI)

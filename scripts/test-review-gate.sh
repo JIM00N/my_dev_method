@@ -136,32 +136,50 @@ if PATH=/nonexistent "$STAMP" --write  2>/dev/null; then echo "실패[degrade]: 
 #   신호가 삼켜져 Ctrl-C 뒤에 **틀린 진단**까지 냈다. 그 회귀를 잡는 자리가 여기다.
 sigdir="$(mktemp -d)"
 mkdir -p "$sigdir/bin"
-# git add 를 느리게 만들어 그 사이에 신호를 넣는다
-printf '#!/usr/bin/env bash\nfor a in "$@"; do [ "$a" = add ] && sleep 5; done\nexec %s "$@"\n' \
-  "$(command -v git)" > "$sigdir/bin/git"
+# git add 를 느리게 만들어 그 사이에 신호를 넣는다. `add` 시작을 마커로 남겨
+# **정말 중단시켰는지**를 뒤에서 확인한다 — 못 끊었으면 단언하지 않는다(넘겨짚지 않는다).
+printf '#!/usr/bin/env bash\nfor a in "$@"; do [ "$a" = add ] && { : > "%s/started"; sleep 5; }; done\nexec %s "$@"\n' \
+  "$sigdir" "$(command -v git)" > "$sigdir/bin/git"
 chmod +x "$sigdir/bin/git"
-before="$(ls -A "${TMPDIR:-/tmp}" | sort)"
-# **별도 프로세스 그룹**에서 돌린다. `set -m` 없이 프로세스 그룹에 신호를 보내면
-# 이 검사 스크립트 자신까지 죽는다(실측 exit 130).
-env PATH="$sigdir/bin:$PATH" S="$STAMP" bash -c '
-  set -m
-  "$S" --write >/dev/null 2>&1 &
-  p=$!
-  sleep 2
-  pg=$(ps -o pgid= -p $p 2>/dev/null | tr -d " ")
-  self=$(ps -o pgid= -p $$ 2>/dev/null | tr -d " ")
-  if [ -n "$pg" ] && [ "$pg" != "$self" ]; then kill -INT -"$pg" 2>/dev/null; else kill -INT "$p" 2>/dev/null; fi
-  wait $p
-' >/dev/null 2>&1 || true
-sleep 1
-after="$(ls -A "${TMPDIR:-/tmp}" | sort)"
-leaked="$(comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") | grep -c '^tmp\.' || true)"
-if [ "${leaked:-0}" -gt 0 ]; then
-  echo "실패[시그널]: SIGINT 로 죽은 뒤 임시 인덱스 디렉토리가 남았다 ($leaked 개)"
+
+# 도장 스크립트의 임시 디렉토리는 `kit-stamp.` 접두어를 쓴다 — **내 것만 세고, 남의 것은 건드리지 않는다.**
+# 공용 `$TMPDIR` 을 통째로 스냅샷하던 판본은 남의 `tmp.*` 를 누수로 오인하고 **지우기까지 했다**(2회전 K3·K6 실측).
+# 반대로 전용 `TMPDIR` 로 가두는 방식은 macOS 에서 무템플릿 `mktemp -d` 가 `TMPDIR` 을 안 따라 **탐지가 죽는다**(K2 실측).
+stamp_tmp_count() { find "${TMPDIR:-/tmp}" -maxdepth 1 -type d -name 'kit-stamp.*' 2>/dev/null | wc -l | tr -d ' '; }
+
+sig_run() { # 별도 프로세스 그룹에서 --write 를 띄우고 중간에 SIGINT
+  rm -f "$sigdir/started"
+  env PATH="$sigdir/bin:$PATH" S="$STAMP" bash -c '
+    set -m
+    "$S" --write >/dev/null 2>&1 &
+    p=$!
+    sleep 2
+    pg=$(ps -o pgid= -p $p 2>/dev/null | tr -d " ")
+    self=$(ps -o pgid= -p $$ 2>/dev/null | tr -d " ")
+    if [ -n "$pg" ] && [ "$pg" != "$self" ]; then kill -INT -"$pg" 2>/dev/null; else kill -INT "$p" 2>/dev/null; fi
+    wait $p
+  ' >/dev/null 2>&1 || true
+  sleep 1
+}
+
+before_n="$(stamp_tmp_count)"
+sig_run
+after_n="$(stamp_tmp_count)"
+if [ ! -f "$sigdir/started" ]; then
+  echo "알림[시그널]: git add 에 도달하기 전에 끝나 12-b/12-c 를 단언하지 않는다 (환경이 느리다)"
+elif [ "$after_n" -gt "$before_n" ]; then
+  echo "실패[시그널]: SIGINT 로 죽은 뒤 임시 인덱스 디렉토리가 남았다 ($((after_n - before_n)) 개)"
   fail=1
-  comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") \
-    | grep '^tmp\.' | while IFS= read -r x; do rm -rf "${TMPDIR:-/tmp:?}/$x"; done
+  # 내 접두어만 정리한다 — 남의 디렉토리는 절대 지우지 않는다
+  find "${TMPDIR:-/tmp}" -maxdepth 1 -type d -name 'kit-stamp.*' -exec rm -rf {} + 2>/dev/null || true
 fi
+
+# **12-c 는 두지 않는다.** 1회전은 `EXIT` 하나 vs `EXIT INT TERM HUP` 의 차이를 "신호를 삼켜
+# 계속 돈다"로 적었지만, **이 스크립트에서는 그 차이가 관측되지 않는다** — 신호가 프로세스 그룹의
+# `git add` 를 죽이고 `prospective_tree` 가 실패해 어느 쪽이든 같은 경로로 끝난다.
+# 실측: 두 판본 모두 **rc=130**, 도장 미생성. 그래서 잴 것이 없다 —
+# 없는 차이를 단언하는 케이스는 hollow 다(2회전에서 실제로 그렇게 만들었다가 걷어냈다).
+# `EXIT` 하나로 두는 것은 여전히 옳은 관용이지만, **여기서는 이식성 판단이지 실측된 결함이 아니다.**
 rm -rf "$sigdir"
 
 # 13) 뮤테이션 자기검증 — 게이트를 끄면 '차단'됐던 커밋이 통과해야 한다(차단 판정이 hollow 가 아님을 증명)

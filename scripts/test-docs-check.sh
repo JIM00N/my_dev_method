@@ -22,11 +22,13 @@ fail=0
 ok() { printf '  통과  %s\n' "$*"; }
 ng() { printf '  실패  %s\n' "$*"; fail=1; }
 
-n=0
 mkfx() { # 저장소 사본 하나를 만들고 경로를 낸다
-  n=$((n + 1))
-  local d="$TMP/fx$n"
-  mkdir -p "$d"
+  # **케이스마다 새 디렉토리다.** 이전 판본은 `n=$((n+1))` 을 썼는데 `d=$(mkfx)` 의 명령치환
+  # 서브셸에서만 증가해 31 개 케이스가 `fx1` **한 디렉토리를 공유**했다. `tar -xf` 는 덮어쓰기만
+  # 하고 삭제를 안 하므로 앞 케이스가 만든 파일이 뒤로 샜다 — 맨 앞의 green 케이스를 맨 뒤에
+  # 그대로 붙이면 실패했다(2회전 K2·K3). 통과가 격리 덕이 아니라 **순서 덕**이었다.
+  local d
+  d="$(mktemp -d "$TMP/fx.XXXXXX")" || return 1
   ( cd "$ROOT" && tar --exclude=./.git --exclude=./manyfast_reference \
                       --exclude=./docs/reports --exclude=./node_modules -cf - . ) \
     | ( cd "$d" && tar -xf - )

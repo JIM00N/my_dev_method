@@ -20,7 +20,7 @@ scripts/check-docs.sh        # 경로·참조(키트 + **이 저장소 자신**)
 scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 실측 + 뮤테이션 자기검증
 scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기)
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
-scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** — 각 분기에 위반을 심어 붉어지는지 실측
+scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (30 케이스) — 검사 1-c·5·6·7·8·9·10 에 위반을 심어 붉어지는지 실측
 ```
 
 > 1단계는 **CI(`.github/workflows/docs-check.yml`)와 같은 검사여야 한다.** CI에 스텝이 추가되면 여기에도 추가한다 —

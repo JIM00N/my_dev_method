@@ -285,7 +285,7 @@ S1~S4는 설계이므로 추론을 가장 높게 씁니다(Claude Code `ultrathi
 my_dev_method/scripts/install-kit.sh <제품 저장소 경로> --upgrade
 ```
 
-**키트 소유 파일만** 교체되고, 프로젝트가 채운 spec 내용·사이클·이슈·STATUS·ADR은 건드리지 않습니다. `CLAUDE.md`는 프로젝트명과 §6 고유 규칙이 있어 자동 교체하지 않고 `CLAUDE.md.dev-kit-new`로 두므로, diff로 비교해 규칙 부분만 옮기고 지우세요.
+**키트 소유 파일만** 교체되고, 프로젝트가 채운 spec 내용·사이클·이슈·STATUS·ADR은 건드리지 않습니다. `CLAUDE.md`는 프로젝트명과 §6 고유 규칙이 있어 자동 교체하지 않고 `CLAUDE.md.dev-kit-new`로 두므로, **새 판으로 교체한 뒤 프로젝트명과 §6 고유 규칙만 되살리세요** — '규칙 부분만' 옮기면 §1 라우팅 표 변경을 놓칩니다.
 
 `cp -R docs .`를 다시 실행하면 **프로젝트가 쌓아온 증거가 전부 파괴됩니다.** 소유권 구분표는 [templates/dev-kit/README.md](templates/dev-kit/README.md)에 있습니다.
 

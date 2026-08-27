@@ -128,7 +128,11 @@ def check_1c():
 # ── 5. 「절 이름」 포인터 ────────────────────────────────────────────────
 # 연결 어구 길이에 상한을 두지 않는다 — 13자를 넘는 포인터가 조용히 빠졌다(#146).
 # 백틱과 개행만 경계로 쓴다.
-POINTER = re.compile(r"`([^`\n]+\.md)`([^`\n「]*)「([^」\n]+)」")
+# 연결 어구에 **길이 상한은 두지 않되**(13자 초과 포인터가 조용히 빠졌다 — #146),
+# 괄호·쉼표가 끼면 포인터가 아니라 서술문이다: `…STATUS.md` 머리말 (두 곳 다 — 아래 「정하는 법」)
+# 처럼 **자기 문서의 절**을 가리키는 형태가 그렇다. 그때 "인용한 문서 자신도 후보"로 완화했더니
+# 검사 5 가 통째로 뚫렸다(2회전 K2: `## 언제 도나` 개명이 5종 전부 통과). 형태로 거른다.
+POINTER = re.compile(r"`([^`\n]+\.md)`([^`\n「()（）,，]*)「([^」\n]+)」")
 
 
 def doc_labels(path):
@@ -169,7 +173,7 @@ def check_5():
                 continue  # 파일 자체가 없는 것은 1)·1-c) 의 몫 — 겹쳐 보고하지 않는다
             seen += 1
             hit = False
-            for t in targets + [f]:   # 인용한 문서 자신도 후보다 — "아래 「…」" 형태가 실재한다
+            for t in targets:
                 if t not in labels_cache:
                     labels_cache[t] = doc_labels(t)
                 if any(lb.startswith(sect) for lb in labels_cache[t]):
@@ -395,26 +399,34 @@ def repo_shell():
     return out
 
 
+# awk 프로그램은 **여러 줄에 걸친다** — 이 저장소의 awk 가 대부분 그렇고, 하필 #098 을 낳은
+# `check-consistency.sh` 의 `table_of()` 가 정확히 그 모양이다. 줄 단위로 보면 재발을 못 잡는다(2회전 K2·K3).
+AWK_PROG = re.compile(r"\bawk\b(?:[^'\n]*)'((?:[^'])*)'", re.S)
+
+
+def _strip_comments(text):
+    return "\n".join("" if l.lstrip().startswith("#") else l for l in text.split("\n"))
+
+
 def check_10():
     for p in repo_shell():
-        for i, ln in enumerate(read(p).split("\n"), 1):
+        body = read(p)
+        stripped = _strip_comments(body)   # 줄 수는 보존된다 — 오프셋도 이 텍스트에서 센다
+        for m in AWK_PROG.finditer(stripped):
+            prog = m.group(1)
+            if "==" in prog and NON_ASCII.search(prog):
+                line = stripped[:m.start()].count("\n") + 1
+                bad("%s:%d — awk 프로그램이 비ASCII 문자열을 `==` 로 비교한다(여러 줄 포함). "
+                    "BSD awk(macOS 기본)는 비ASCII 문자열 둘을 무조건 같다고 판정한다 → 순수 bash 로 비교한다"
+                    % (rel(p), line))
+        for i, ln in enumerate(body.split("\n"), 1):
             if ln.lstrip().startswith("#"):
                 continue  # 설명하는 주석은 대상이 아니다
             if VAR_MB.search(ln):
                 bad("%s:%d — `$변수` 뒤에 곧바로 멀티바이트 문자가 온다. "
                     "bash 가 그 바이트를 변수명에 붙여 읽어 `set -u` 아래에서 죽는다 → `${변수}` 로 감싼다"
                     % (rel(p), i))
-            # 줄에 `awk`·`==`·한글이 같이 있다는 것만으로 잡으면 **설명 문장까지** 걸린다.
-            # awk 호출 뒤의 **따옴표로 묶인 프로그램 본문**만 본다.
-            m = re.search(r"\bawk\b(.*)$", ln)
-            if m:
-                for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", m.group(1)):
-                    prog = a or b
-                    if "==" in prog and NON_ASCII.search(prog):
-                        bad("%s:%d — awk 프로그램이 비ASCII 문자열을 `==` 로 비교한다. "
-                            "BSD awk(macOS 기본)는 비ASCII 문자열 둘을 무조건 같다고 판정한다 → 순수 bash 로 비교한다"
-                            % (rel(p), i))
-                        break
+
 
 
 for fn in (check_1c, check_5, check_6, check_7, check_8, check_9, check_10):

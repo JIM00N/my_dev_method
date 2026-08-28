@@ -1,5 +1,5 @@
 ---
-name: kit-review-k3
+name: mdm-kit-review-k3
 description: K3 셸 정확성. 변경된 셸 스크립트의 인용·빈 입력·exit code 전파·set -e/pipefail·bash 3.2 및 BSD/GNU 이식성·실패 후 성공 메시지를 본다. 스타일이 아니라 실제로 틀리는 시나리오만 지적한다. 코드를 고치지 않는다.
 tools: Read, Grep, Glob, Bash
 model: inherit

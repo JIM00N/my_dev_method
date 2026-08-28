@@ -1,5 +1,5 @@
 ---
-name: kit-review-k6
+name: mdm-kit-review-k6
 description: K6 회귀 증거. 검사기·훅이 "잡는다"고 주장하는 항목마다 그 항목이 심어진 실패 fixture가 존재하고 CI에서 도는지 확인한다. 잡히는 증거가 없는 검사는 없는 검사로 간주한다. 버그 수정에 재현 fixture가 동반됐는지도 본다. 코드를 고치지 않는다.
 tools: Read, Grep, Glob, Bash
 model: inherit

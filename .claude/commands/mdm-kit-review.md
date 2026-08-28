@@ -18,9 +18,10 @@ argument-hint: [리뷰 범위. 생략하면 현재 작업 트리의 변경 전�
 ```bash
 scripts/check-docs.sh        # 경로·참조(키트 + **이 저장소 자신**) · 절 이름 포인터 · 축↔에이전트 대응 · 셸 문법 · **훅 실행 권한** (`.githooks/*` 포함 — 권한이 빠지면 게이트가 조용히 fail-open 된다)
 scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 실측 + 뮤테이션 자기검증
-scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기)
+scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기 · I 문서 등재 대조)
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
-scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (30 케이스) — 검사 1-c·5·6·7·8·9·10 에 위반을 심어 붉어지는지 실측
+scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (33 케이스) — 검사 1-c·5·6·7·8·9·10·11 에 위반을 심어 붉어지는지 실측
+scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (13 + 뮤테이션 1) — 설치기가 0.7.0 개명의 옛 이름을 **건드리지 않는가**(불간섭) + 알림·카탈로그 행 보존·키트 문서 갱신
 ```
 
 > 1단계는 **CI(`.github/workflows/docs-check.yml`)와 같은 검사여야 한다.** CI에 스텝이 추가되면 여기에도 추가한다 —
@@ -39,24 +40,24 @@ scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (30 �
 | (항상 — 모든 변경은 약속에 닿을 수 있다) | K1 |
 | `*.md` — 문서·가이드·양식·커맨드·에이전트 정의 | K5 |
 | `*.sh` — 훅·검사기·설치기 | K2 · K3 · K6 |
-| `install-kit.sh` · STATUS 양식 · `MOC.md` · `adopt.md`/`stage.md` | K4 |
+| `install-kit.sh` · STATUS 양식 · `MOC.md` · `mdm-adopt.md`/`mdm-stage.md` | K4 |
 | 릴리스 직전 · 대규모 변경 | 6축 전부 |
 
 | 축 | 에이전트 | 관점 |
 |---|---|---|
-| K1 | `kit-review-k1` | 약속–강제 대조 — "막는다"고 적힌 것이 코드 어디에 있나 |
-| K2 | `kit-review-k2` | 우회 재현 — fixture를 만들어 실제로 돌려서 뚫는다 |
-| K3 | `kit-review-k3` | 셸 정확성 — 인용·빈 입력·exit code·이식성 |
-| K4 | `kit-review-k4` | 수명주기 경로 — 설치→첫 세션→도입→사이클이 이어지나 |
-| K5 | `kit-review-k5` | 의미적 문서 정합 — 기계가 못 잡는 모순만 |
-| K6 | `kit-review-k6` | 회귀 증거 — 잡는다는 주장마다 잡히는 fixture가 있나 |
+| K1 | `mdm-kit-review-k1` | 약속–강제 대조 — "막는다"고 적힌 것이 코드 어디에 있나 |
+| K2 | `mdm-kit-review-k2` | 우회 재현 — fixture를 만들어 실제로 돌려서 뚫는다 |
+| K3 | `mdm-kit-review-k3` | 셸 정확성 — 인용·빈 입력·exit code·이식성 |
+| K4 | `mdm-kit-review-k4` | 수명주기 경로 — 설치→첫 세션→도입→사이클이 이어지나 |
+| K5 | `mdm-kit-review-k5` | 의미적 문서 정합 — 기계가 못 잡는 모순만 |
+| K6 | `mdm-kit-review-k6` | 회귀 증거 — 잡는다는 주장마다 잡히는 fixture가 있나 |
 
 선택한 축의 에이전트를 **병렬로** 띄우고, 각각에 (1) 리뷰 범위(변경 파일 목록·diff 대상)와
 (2) 1단계 출력을 그대로 전달한다.
 
 ## 3단계 — 반증
 
-2단계가 올린 **치명·높음** 발견마다 `kit-refute` 에이전트를 띄워 반박을 시도시킨다.
+2단계가 올린 **치명·높음** 발견마다 `mdm-kit-refute` 에이전트를 띄워 반박을 시도시킨다.
 **반증 프롬프트에 리뷰 범위를 못 박는다 — 범위는 커밋된 것이 아니라 미커밋 작업 트리다.**
 (1회전에서 반증 하나가 `git diff main HEAD`로 판정해 실재하는 변경을 "건드린 적 없다"로 잘못 기각했다)
 

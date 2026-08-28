@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# 리뷰 통과 도장 — /kit-review 통과 시 --write 로 "커밋될 트리"의 git object id 를 찍고,
+# 리뷰 통과 도장 — /mdm-kit-review 통과 시 --write 로 "커밋될 트리"의 git object id 를 찍고,
 # .githooks/pre-commit 이 커밋 시점에 --verify 로 실제 커밋 트리를 그 도장과 대조한다.
 #
 # 지문은 git write-tree 로 낸다 — git 이 트리를 계산하므로 파일명 인용·비ASCII·
 # 인덱스/작업트리 차이·개행에 흔들리지 않는다. git 이 실패하면 삼키지 않고 비-0 으로 낸다(fail-closed).
 #
 # 신뢰 경계(정직하게): 이 장치가 기계적으로 보장하는 것은 "커밋되는 트리 == 도장 찍힌 트리"까지다.
-# 도장은 /kit-review 흐름이 찍는다. **리뷰가 실제로 돌았음을 암호학적으로 증명하지는 못한다** —
+# 도장은 /mdm-kit-review 흐름이 찍는다. **리뷰가 실제로 돌았음을 암호학적으로 증명하지는 못한다** —
 # 그 연결(도장 ⇒ 리뷰)은 기계가 아니라 절차(에이전트 신뢰)다. 이 저장소에 그 이상의 신뢰 뿌리는 없다.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

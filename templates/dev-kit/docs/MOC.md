@@ -16,7 +16,7 @@
 ```text
 상류에 계획 문서가 있다        없다
 → guides/S0-adopt.md          → guides/S1-problem.md
-→ /adopt                       → /stage 1
+→ /mdm-adopt                       → /mdm-stage 1
 → upstream/ 스냅샷             → 전체 인터뷰
 → spec/source-map.md (ID·갭)
 → 갭이 가리키는 절만 (S2·S4)
@@ -24,7 +24,7 @@
 ```
 
 - 요구사항 추적: `docs/spec/source-map.md` → 요구사항 ID → 사이클 → 테스트 (검사는 `.claude/scripts/check-consistency.sh`)
-- 상류 동기화: `/adopt --sync` → 재검토 표시 → 사람 판정 → `docs/spec/domain.md` 등 갱신
+- 상류 동기화: `/mdm-adopt --sync` → 재검토 표시 → 사람 판정 → `docs/spec/domain.md` 등 갱신
 - 절차량 판정: `docs/spec/product.md`의 사분면 → `docs/guides/profiles.md` → 프로파일 (게이트는 각 가이드 DoD의 표식)
 - 커밋 관여도: S1에서 질문 → `docs/guides/commit-policy.md` → `docs/spec/product.md`·`docs/status/STATUS.md` 커밋 정책 칸
   (**기계 장치는 없다** — 절대 규칙 13과 S1 DoD의 `(사람 확인)` 항목이 전부다)
@@ -33,7 +33,7 @@
 - 실행 계획: `docs/plan/index.md` → roadmap → 활성 cycles → 필요하면 stories
 - 현재 상태: `docs/status/index.md` → STATUS → 필요한 archive
 - 품질·에러 학습: `docs/quality/index.md` → issues → error-learning-ingest guide → rules-learned → 자동 테스트 승격
-- 코드리뷰: `/review` → 1단계 정합성 검사 → 2단계 `code-review` 서브에이전트 → 발견을 issues에 기록 → 수정 → 재리뷰
+- 코드리뷰: `/mdm-review` → 1단계 정합성 검사 → 2단계 `mdm-code-review` 서브에이전트 → 발견을 issues에 기록 → 수정 → 재리뷰
 - 큰 결정: `docs/decisions/index.md` → ADR
 - 기계적 강제: `.claude/README.md` → 훅·스크립트·커맨드·서브에이전트
 

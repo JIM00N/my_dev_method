@@ -1,5 +1,5 @@
 ---
-name: kit-review-k1
+name: mdm-kit-review-k1
 description: K1 약속–강제 대조. 키트 문서가 "막는다·검사한다·강제한다"고 말하는 모든 보장을 목록화하고, 각각이 스크립트·훅의 실제 코드 몇 줄에서 구현되는지 대조한다. 구현이 없거나 약속보다 약하면 지적한다. 코드를 고치지 않는다.
 tools: Read, Grep, Glob, Bash
 model: inherit

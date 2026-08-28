@@ -1,5 +1,5 @@
 ---
-name: kit-review-k5
+name: mdm-kit-review-k5
 description: K5 의미적 문서 정합. 경로·참조 깨짐(check-docs.sh 몫)은 보지 않고, 기계가 못 잡는 것만 본다 — 두 문서가 같은 사실에 다른 값을 말하는 모순, 양식으로 만족 불가능한 조건, 정본이 둘인 서술, 외부 도구 용어 유입. 코드를 고치지 않는다.
 tools: Read, Grep, Glob, Bash
 model: inherit

@@ -8,8 +8,8 @@
 |---|---|---|
 | `test-scenarios.md` | 사람이 직접 눌러볼 검수 목록 + 자동화 여부 | 사이클 구현이 끝났을 때 만든다 |
 | `issues.md` | 발견된 모든 문제의 기록 | 문제를 발견한 **즉시** |
-| `rules-learned.md` | 재발 방지 규칙 | 같은 유형 문제가 **2번째**일 때 (`/ingest-errors`가 승격) |
-| `learning-log.md` | Error Learning Agent의 종합 기록 | `/ingest-errors` 실행 시 (에이전트가 쓴다) |
+| `rules-learned.md` | 재발 방지 규칙 | 같은 유형 문제가 **2번째**일 때 (`/mdm-ingest-errors`가 승격) |
+| `learning-log.md` | Error Learning Agent의 종합 기록 | `/mdm-ingest-errors` 실행 시 (에이전트가 쓴다) |
 | `archive/` | 검증 완료된 이슈의 유형별 보관 | 재검수 통과 이슈를 옮길 때 |
 
 ## 이슈 유형 (정본) ★
@@ -59,14 +59,14 @@
 ## 원칙
 
 1. **기록 없이 고치지 않는다.** "사소해서" 넘긴 것이 나중에 패턴으로 드러난다.
-2. **재검수 없이 닫지 않는다.** 수정했다 ≠ 고쳐졌다. 검증된 이슈는 `docs/quality/archive/<유형>/`에 보존하고 열린 이슈 목록에서는 제거한다. 이동의 실행 주체는 `/cycle-close` 6단계다 — 규칙만 있고 실행자가 없으면 쌓이기만 한다.
+2. **재검수 없이 닫지 않는다.** 수정했다 ≠ 고쳐졌다. 검증된 이슈는 `docs/quality/archive/<유형>/`에 보존하고 열린 이슈 목록에서는 제거한다. 이동의 실행 주체는 `/mdm-cycle-close` 6단계다 — 규칙만 있고 실행자가 없으면 쌓이기만 한다.
 3. **"동작합니다"는 검수가 아니다.** 사람이 눌러서 통과시킨 것만 검수다. 자동 테스트가 초록인 것도 검수가 아니다 — 자동 테스트는 내가 예상한 것만 본다.
 4. **초록불을 만들기 위해 검증을 약화시키지 않는다** (절대 규칙 11). 테스트 삭제·단언 완화·타입 무시·예외 삼킴·린트 비활성화로 통과시킨 것은 통과가 아니다. 막히면 여기 기록하고 보고한다.
 5. **버그를 잡아낸 검수 시나리오는 자동 테스트로 승격한다.** 예외 없다. 절차는 `docs/guides/S6-build.md` 5-4.
 6. **치명·높음 이슈가 열려 있으면 배포하지 않는다.**
 7. 규칙이 10개를 넘으면 이관한다 — 프로젝트 고유 규칙은 `CLAUDE.md` 6절 또는 `docs/spec/code-conventions.md`로. `docs/guides/`는 고치지 않는다 (새 프로젝트로 그대로 복사되는 불변 절차서다).
-8. 새 오류 기록의 원인·조치·검수 근거를 Error Learning Agent가 종합해 `learning-log.md`와 필요한 규칙·검수 문서에 인제스트한다. 절차는 `docs/guides/error-learning-ingest.md`를 따르고, 실행은 `/ingest-errors`다.
-9. 코드리뷰는 `code-review` 서브에이전트가 한다 (`/review`). 리뷰가 잡은 문제도 1번 원칙대로 `issues.md`에 먼저 기록한다 —
+8. 새 오류 기록의 원인·조치·검수 근거를 Error Learning Agent가 종합해 `learning-log.md`와 필요한 규칙·검수 문서에 인제스트한다. 절차는 `docs/guides/error-learning-ingest.md`를 따르고, 실행은 `/mdm-ingest-errors`다.
+9. 코드리뷰는 `mdm-code-review` 서브에이전트가 한다 (`/mdm-review`). 리뷰가 잡은 문제도 1번 원칙대로 `issues.md`에 먼저 기록한다 —
    **심각도로 거르지 않는다.** 기록되지 않은 지적은 2회차 승격 카운터에 잡히지 않아 규칙으로 올라가지 못한다.
 
 ## 심각도 기준

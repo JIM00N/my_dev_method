@@ -4,15 +4,16 @@
 # 검사하는 것:
 #   A. 상류 스냅샷 무결성   docs/upstream/ 파일이 수집 이후 손으로 고쳐졌는가
 #   B. 요구사항 커버리지     준비 미달로 사이클 진입 · 완료인데 테스트 없음 · 검증 조건보다 테스트 적음 · 진행 중인데 사이클 없음
-#   C. 재검토 잔존          /adopt --sync 가 표시한 재검토가 처리되지 않았는가
+#   C. 재검토 잔존          /mdm-adopt --sync 가 표시한 재검토가 처리되지 않았는가
 #   D. 고아 인용            코드·문서가 인용한 ID 가 정본 매핑표에 없는가
 #   E. 화면 정합            화면 ID 가 docs/spec/interface.md 에 실제로 있는가
 #   F. 참조 깨짐            백틱 `docs/…` 참조가 실재하는가
 #   G. 테스트 실재          매핑표 테스트 칸의 이름이 코드에 실제로 있는가
 #   H. 마일스톤 배치       모든 요구사항이 마일스톤에 배치됐는가 · 마일스톤 크기 신호 (경고)
+#   I. 문서 등재 대조       사이클·ADR 은 문서↔행 양방향 · Story 는 활성 행 유무·잔존 행만 (문서 없는 행은 안 잡는다)
 #
 # 정본: docs/spec/source-map.md (요구사항·화면 매핑표)
-# 실행: /review 1단계 · 사이클 시작 · /cycle-close · CI
+# 실행: /mdm-review 1단계 · 사이클 시작 · /mdm-cycle-close · CI
 #
 # ID 형식을 고정하지 않는다. 상류가 붙인 ID를 그대로 쓰므로(FR-1 · R-AOTSCK · REQ-042 무엇이든),
 # 검사기는 매핑표에 실제로 쓰인 값에서 접두사를 유도해 대조한다.
@@ -47,17 +48,25 @@ sha() {
 # ── 표 읽기 ──────────────────────────────────────────────────────────────
 # 절 안의 첫 표를 통째로 뽑는다. 표는 '| ID |' 머리행에서 시작해 비-표 줄에서 끝난다.
 # (같은 절 뒤에 오는 '열의 뜻' 설명표는 사이의 산문 줄에서 끊기므로 섞이지 않는다)
+# 앞공백 행은 GFM 이 표로 렌더하므로(3칸까지) 읽어야 하고, 표 안 빈 줄은 절단이 아니다 —
+# 절단이 무음이면 그 아래 행 전부가 전 검사에서 조용히 빠진다 (2회전 K2 높음 #269, 반증 확정).
+# 산문을 만나면 표가 끝난다 — 같은 절 뒤의 「열의 뜻」 설명표와는 그래서 안 섞인다.
 table_of() {
   awk -v sec="^## $1\\." '
-    $0 ~ sec { inseg=1; next }
-    inseg && /^## / { exit }
-    inseg && /^\|[[:space:]]*ID[[:space:]]*\|/ { intab=1 }
-    intab && $0 !~ /^\|/ { exit }
-    intab { print }
+    { l = $0; sub(/^[ \t]+/, "", l) }
+    !inseg { if (l ~ sec) inseg = 1; next }
+    l ~ /^## / { exit }
+    !intab { if (l ~ /^\|[[:space:]]*ID[[:space:]]*\|/) intab = 1; else next }
+    l == "" { next }
+    l !~ /^\|/ { exit }
+    { print l }
   ' "$MAP"
 }
-# 구분줄(|---|---|)과 플레이스홀더(<…>)가 든 양식 행은 뺀다.
-data_rows() { table_of "$1" | tail -n +2 | grep -vE '^\|[[:space:]:|-]+$' | grep -v '<'; }
+# 구분줄(|---|---|)과 플레이스홀더 양식 행은 뺀다.
+# 양식 행의 기준은 **ID 칸(첫 칸)이 통째로 <…>** 인 것 하나다 — 칸 안의 <br> 은 표준 셀 줄바꿈이고
+# (1회전 K2 치명 #240), 채워진 행에 남은 <보류> 같은 칸으로 행 전체를 면제하면 빈 칸(—)보다
+# placeholder 를 더 관대하게 다루는 역전이 된다 (2회전 K2 높음 #267, 둘 다 반증 확정).
+data_rows() { table_of "$1" | tail -n +2 | grep -vE '^\|[[:space:]:|-]+$' | grep -vE '^\|[[:space:]]*<[^|>]*>[[:space:]]*\|'; }
 header_of() { table_of "$1" | head -1; }
 
 # 머리행에서 열 이름의 자리 번호(1부터)를 찾는다. 없으면 빈 문자열.
@@ -100,11 +109,11 @@ scr_rows() { data_rows 3; }
 
 # 도입 전이면 검사할 것이 없다 — 실패시키지 않되, 상태를 분명히 알린다.
 if [ ! -f "$MAP" ]; then
-  note "도입 전 — docs/spec/source-map.md 가 없다. /adopt 를 먼저 실행한다."
+  note "도입 전 — docs/spec/source-map.md 가 없다. /mdm-adopt 를 먼저 실행한다."
   exit 0
 fi
 if [ -z "$(req_rows)" ] && [ -z "$(scr_rows)" ]; then
-  note "도입 전 — docs/spec/source-map.md 에 요구사항이 없다 (양식만 있음). /adopt 를 먼저 실행한다."
+  note "도입 전 — docs/spec/source-map.md 에 요구사항이 없다 (양식만 있음). /mdm-adopt 를 먼저 실행한다."
   note "이 상태에서는 어떤 요구사항 근거로 무엇을 만드는지 기계가 대조할 수 없다."
   exit 0
 fi
@@ -115,7 +124,7 @@ fi
 if [ -d "$UPSTREAM" ]; then
   if [ ! -f "$MANIFEST" ]; then
     if ls "$UPSTREAM"/*.md >/dev/null 2>&1; then
-      bad "상류 스냅샷은 있는데 수집 기록이 없다: docs/upstream/manifest.tsv — /adopt 로 다시 수집한다"
+      bad "상류 스냅샷은 있는데 수집 기록이 없다: docs/upstream/manifest.tsv — /mdm-adopt 로 다시 수집한다"
     fi
   else
     while IFS=$'\t' read -r f _src _at recorded; do
@@ -128,7 +137,7 @@ if [ -d "$UPSTREAM" ]; then
       actual=$(sha "$target")
       [ "$actual" = "NOTOOL" ] && { caution "sha256 도구가 없어 스냅샷 무결성 검사를 건너뛴다"; break; }
       if [ "$actual" != "$recorded" ]; then
-        bad "스냅샷이 수집 이후 변경됨: docs/upstream/$f — 상류가 정본이다. 손으로 고치지 말고 /adopt --sync 로 받는다"
+        bad "스냅샷이 수집 이후 변경됨: docs/upstream/$f — 상류가 정본이다. 손으로 고치지 말고 /mdm-adopt --sync 로 받는다"
       fi
     done < "$MANIFEST"
   fi
@@ -151,7 +160,7 @@ for want in ID 사이클 테스트 상태 재검토; do
   [ -n "$got" ] || bad "요구사항 매핑표에 '$want' 열이 없다 — docs/spec/source-map.md 2절 머리행을 확인한다"
 done
 [ -n "$i_cond" ]  || caution "요구사항 매핑표에 '조건 수' 열이 없다 — 검증 조건 대비 테스트 수 검사를 건너뛴다"
-[ -n "$i_ready" ] || caution "요구사항 매핑표에 '준비' 열이 없다 — 준비도 검사를 건너뛴다 (/ready 참조)"
+[ -n "$i_ready" ] || caution "요구사항 매핑표에 '준비' 열이 없다 — 준비도 검사를 건너뛴다 (/mdm-ready 참조)"
 
 while IFS= read -r row; do
   [ -n "$row" ] || continue
@@ -174,14 +183,14 @@ while IFS= read -r row; do
     case "$state" in
       *🔵*|*🟡*|*✅*)
         case "$ready" in
-          ''|'—'|'-') bad "$id — 진행 중인데 준비도 점검을 안 돌렸다 → /ready 로 딸린 Story 의 슬롯을 판정한다" ;;
-          *재판정*) bad "$id — 상류가 바뀌어 준비 판정이 무효가 됐다: $ready → 새 상류 기준으로 /ready 를 다시 돌린다" ;;
-          *❌*) bad "$id — 준비되지 않은 칸이 남아 있다: $ready → 답이 없는 칸은 구현 중에 지어내진다. /ready 로 채운다" ;;
+          ''|'—'|'-') bad "$id — 진행 중인데 준비도 점검을 안 돌렸다 → /mdm-ready 로 딸린 Story 의 슬롯을 판정한다" ;;
+          *재판정*) bad "$id — 상류가 바뀌어 준비 판정이 무효가 됐다: $ready → 새 상류 기준으로 /mdm-ready 를 다시 돌린다" ;;
+          *❌*) bad "$id — 준비되지 않은 칸이 남아 있다: $ready → 답이 없는 칸은 구현 중에 지어내진다. /mdm-ready 로 채운다" ;;
         esac
         ;;
       *)
         case "$ready" in
-          ''|'—'|'-') caution "$id — 준비도 점검 전이다. 사이클에 올리기 전에 /ready 를 돌린다" ;;
+          ''|'—'|'-') caution "$id — 준비도 점검 전이다. 사이클에 올리기 전에 /mdm-ready 를 돌린다" ;;
         esac
         ;;
     esac
@@ -210,7 +219,7 @@ while IFS= read -r row; do
 
   case "$recheck" in
     ''|'—'|'-') ;;
-    *) bad "$id — 상류 변경 재검토가 남아 있다: $recheck → /adopt --sync 7단계로 판정하고 칸을 비운다" ;;
+    *) bad "$id — 상류 변경 재검토가 남아 있다: $recheck → /mdm-adopt --sync 7단계로 판정하고 칸을 비운다" ;;
   esac
 done < <(req_rows)
 
@@ -257,7 +266,7 @@ else
   while IFS= read -r c; do
     [ -n "$c" ] || continue
     printf '%s\n' "$known_ids" | grep -qx "$c" || \
-      bad "고아 인용: $c — 어딘가가 인용하지만 docs/spec/source-map.md 에 없다 → 오타면 고치고, 새 요구사항이면 /adopt"
+      bad "고아 인용: $c — 어딘가가 인용하지만 docs/spec/source-map.md 에 없다 → 오타면 고치고, 새 요구사항이면 /mdm-adopt"
   done < <(printf '%s\n' "$cited")
 fi
 
@@ -317,7 +326,7 @@ done < <(req_rows)
 
 # ── H. 마일스톤 배치 ─────────────────────────────────────────────────────
 # 마일스톤은 상류가 주지 않는 축이다 — 계획 문서는 "무엇을"의 트리이지 "언제까지"가 아니다.
-# /adopt 7단계가 세우고, 배치가 비면 "언제 만들지 아무도 모르는 요구사항"이 되므로 실패시킨다.
+# /mdm-adopt 7단계가 세우고, 배치가 비면 "언제 만들지 아무도 모르는 요구사항"이 되므로 실패시킨다.
 # 크기 신호(사이클 5바퀴 초과 · 요구사항 1개)는 경고다 — 다시 그으라는 신호이지 틀렸다는 판정이 아니다.
 # 사이클 수는 매핑표의 사이클 칸에서 센다 (roadmap 을 따로 파싱하지 않는다). 아직 배정 안 된
 # 요구사항은 사이클 칸이 비어 있어 낮게 잡히는데, 그건 "아직 계획 안 됨"이므로 맞는 동작이다.
@@ -335,7 +344,7 @@ else
     cyc=$(cell "$row" "$i_cycle")
     case "$ms" in
       ''|'—'|'-')
-        bad "$id — 마일스톤 배치가 비었다. 언제 만들지 정해지지 않은 요구사항이다 → /adopt 7단계로 배치한다 (백로그가 아니라 매핑표 '마일스톤' 칸)"
+        bad "$id — 마일스톤 배치가 비었다. 언제 만들지 정해지지 않은 요구사항이다 → /mdm-adopt 7단계로 배치한다 (백로그가 아니라 매핑표 '마일스톤' 칸)"
         continue ;;
     esac
     ms_rows="${ms_rows}${ms}
@@ -379,6 +388,171 @@ else
   done < <(printf '%s' "$ms_rows" | sort -u)
 fi
 
+# ── I. 문서 등재 대조 ────────────────────────────────────────────────────
+# 문서를 만들면 카탈로그에 등재한다 (docs/index.md 파일 목록 원칙). 등재 없는 문서는
+# 다음 세션이 존재를 모르고, 문서 없는 행은 카탈로그가 거짓을 말한다 — 양방향을 잡는다.
+#   사이클  docs/plan/cycles/ + archive/cycles/  ↔  docs/plan/index.md 「사이클 현황」 표 (행 영구)
+#   ADR    docs/decisions/                       ↔  docs/decisions/index.md 「목록」 표 (행 영구)
+#   Story  docs/plan/stories/                    ↔  docs/status/STATUS.md 「활성 병렬 작업」 표 (활성 동안만)
+# Story 는 문서 없이 행만 있는 것을 잡지 않는다 — 프로파일에 따라 Story 는 문서 없이
+# 사이클 문서 안에만 존재하는 것이 정상이라, 잡으면 설계상 오탐이 정상인 검사가 된다.
+# 대신 archive 로 닫힌 Story 의 행이 활성 표에 남은 것은 잡는다 (닫힌 행은 지우는 것이 규칙이다).
+# 양식 파일(C00·ST-000·ADR-000)은 대상이 아니다.
+
+# 절 제목("## " 뒤 전방 일치) 아래의 표 줄 **전부**를 뽑는다 — 순수 bash.
+# (table_of 는 $MAP 전용·'| ID |' 머리행 전제라 다른 파일에는 못 쓴다)
+# 첫 비-표 줄에서 끊지 않는다 — 끊으면 빈 줄 뒤에 붙은 행·같은 절의 둘째 표가 안 읽혀,
+# 역방향 검사(문서 없는 행)가 조용히 통과한다 (1회전 K2 높음 3건, 반증 확정).
+# 코드펜스(```) 안은 절 제목이든 표든 무시한다. 후행 개행 없는 마지막 줄도 읽는다.
+reg_table() { # $1=파일 $2=절 제목
+  local f="$1" sect="$2" seen=0 fence=0 line
+  [ -f "$f" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line#"${line%%[![:space:]]*}"}"   # 앞공백 제거 — GFM 은 3칸까지 표·제목으로 렌더한다 (#268)
+    case "$line" in '```'*) if [ "$fence" = 0 ]; then fence=1; else fence=0; fi; continue ;; esac
+    [ "$fence" = 1 ] && continue
+    if [ "$seen" = 0 ]; then
+      case "$line" in "## ${sect}"*) seen=1 ;; esac
+      continue
+    fi
+    case "$line" in "## "*) break ;; "|"*) printf '%s\n' "$line" ;; esac
+  done < "$f"
+}
+# ID 칸의 마크다운 장식을 벗긴다 — **C01**·`C01`·[C01](…) 을 그대로 두면
+# 장식된 유령·잔존 행이 판정 필터에서 조용히 면제된다 (1회전 K2 보통).
+norm_id() {
+  local v; v=$(trim "$1")
+  case "$v" in \[*\]*) v="${v#\[}"; v="${v%%\]*}" ;; esac   # [C02](x) 뒤에 텍스트가 붙어도 안쪽만
+  v="${v//\*/}"; v="${v//\`/}"
+  v=$(trim "$v")
+  v="${v%%[[:space:]]*}"                                      # 「C02 (예정)」 → C02 — 뒤 텍스트로 판정을 빠져나가지 않게
+  printf '%s' "$v"
+}
+# 레지스트리 구조 확인 — 파일이 있는데 절의 표나 열이 안 보이면 **실패**시킨다.
+# 경고로 두면 열 이름 하나 바꾸는 것으로 검사 I 전체가 exit 0 으로 꺼진다 — CI·게이트는 exit 만 본다.
+# 소스맵의 필수 열 부재가 bad 인 것과 같은 강도다 (2회전 K2 보통 #270).
+# 반환: 0 정상 · 1 구조 이탈(실패 냄) · 2 파일 없음(도입 전·미설치 — 대조 대상 아님)
+reg_check() { # $1=파일 $2=절 제목 $3=열 이름
+  local f="$1" rows hdr
+  [ -f "$f" ] || return 2
+  rows=$(reg_table "$f" "$2")
+  if [ -z "$rows" ]; then
+    bad "${f#"$ROOT"/} — 「## $2」 절에서 표를 찾지 못했다. 등재 대조(검사 I)가 이 표를 못 본다 → 절 제목·표를 양식대로 되돌린다"
+    return 1
+  fi
+  hdr=$(printf '%s\n' "$rows" | head -1)
+  if [ -z "$(col_idx "$hdr" "$3")" ]; then
+    bad "${f#"$ROOT"/} — 「## $2」 절의 표에 '$3' 열이 없다. 등재 대조(검사 I)가 이 표를 못 본다 → 열 이름을 양식대로 되돌린다"
+    return 1
+  fi
+}
+# 그 표에서 지정한 열의 값들 (한 줄에 하나, 장식 제거). 빈 칸·'—' 는 뺀다.
+# 추출 0건은 여기서 실패가 아니다 — 문서 쪽 ID 가 있으면 아래 대조에서 등재 누락으로 잡히고,
+# 구조 이탈로 0건이 되는 경우는 reg_check 가 경고를 낸다.
+reg_ids() { # $1=파일 $2=절 제목 $3=열 이름
+  local rows hdr idx row v
+  rows=$(reg_table "$1" "$2")
+  [ -n "$rows" ] || return 0
+  hdr=$(printf '%s\n' "$rows" | head -1)
+  idx=$(col_idx "$hdr" "$3")
+  [ -n "$idx" ] || return 0
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    v=$(norm_id "$(cell "$row" "$idx")")
+    case "$v" in ''|'—'|'-') continue ;; esac
+    printf '%s\n' "$v"
+  done < <(printf '%s\n' "$rows" | tail -n +2 | grep -vE '^\|[[:space:]:|-]+$')
+}
+# 파일명에서 숫자부만 확인해 ID 를 돌려준다. 형식이 다르면 빈 문자열 (대상 아님).
+cyc_id_of() { # C01-이름.md → C01
+  local b="${1##*/}" id
+  id="${b%%-*}"; id="${id%.md}"
+  case "${id#C}" in ''|*[!0-9]*) return 0 ;; esac
+  [ "$id" = "C00" ] || printf '%s' "$id"
+}
+pre_id_of() { # $1=파일 $2=접두사. ST-001-이름.md → ST-001
+  local b="${1##*/}" pre="$2" num
+  case "$b" in "${pre}-"*) ;; *) return 0 ;; esac
+  num="${b#*-}"; num="${num%%-*}"; num="${num%.md}"
+  case "$num" in ''|*[!0-9]*) return 0 ;; esac
+  [ "$num" = "000" ] || printf '%s' "${pre}-${num}"
+}
+
+# 사이클 — 양방향. 문서는 활성·archive 어디에 있든 현황 표에 행이 있어야 한다 (행 영구).
+reg_check "$ROOT/docs/plan/index.md" "사이클 현황" "#"; cyc_st=$?
+cyc_reg=""; [ "$cyc_st" = 0 ] && cyc_reg=$(reg_ids "$ROOT/docs/plan/index.md" "사이클 현황" "#")
+cyc_files=""
+for f in "$ROOT"/docs/plan/cycles/*.md "$ROOT"/docs/plan/archive/cycles/*.md; do
+  [ -e "$f" ] || continue
+  id=$(cyc_id_of "$f"); [ -n "$id" ] || continue
+  cyc_files="${cyc_files}${id}
+"
+done
+if [ "$cyc_st" != 1 ]; then   # 구조 이탈이면 경고만 — 못 읽는 표를 근거로 판정하지 않는다
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    printf '%s\n' "$cyc_reg" | grep -qx "$id" || \
+      bad "$id — 사이클 문서는 있는데 docs/plan/index.md 사이클 현황 표에 행이 없다. 등재 없는 문서는 다음 세션이 존재를 모른다 → 표에 행을 추가한다 ('#' 칸에 $id)"
+  done < <(printf '%s' "$cyc_files" | sort -u)
+fi
+if [ "$cyc_st" = 0 ]; then
+  while IFS= read -r rid; do
+    [ -n "$rid" ] || continue
+    case "$rid" in C*) ;; *) continue ;; esac        # 'C숫자' 꼴 행만 판정한다 —
+    case "${rid#C}" in ''|*[!0-9]*) continue ;; esac  # 접두 확인 없이 숫자만 보면 순번 행(| 3 |)을 오탐한다
+    printf '%s' "$cyc_files" | grep -qx "$rid" || \
+      bad "$rid — 사이클 현황 표에 행은 있는데 사이클 문서가 없다 (docs/plan/cycles/ · archive/cycles/ 어디에도) → 오타면 행을 고치고, 아니면 문서를 만든다"
+  done < <(printf '%s\n' "$cyc_reg")
+fi
+
+# ADR — 양방향. ADR 은 archive 로 가지 않는다 (대체·폐기도 행·문서를 남긴다).
+reg_check "$ROOT/docs/decisions/index.md" "목록" "#"; adr_st=$?
+adr_reg=""; [ "$adr_st" = 0 ] && adr_reg=$(reg_ids "$ROOT/docs/decisions/index.md" "목록" "#")
+adr_files=""
+for f in "$ROOT"/docs/decisions/ADR-*.md; do
+  [ -e "$f" ] || continue
+  id=$(pre_id_of "$f" "ADR"); [ -n "$id" ] || continue
+  adr_files="${adr_files}${id}
+"
+done
+if [ "$adr_st" != 1 ]; then
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    printf '%s\n' "$adr_reg" | grep -qx "$id" || \
+      bad "$id — ADR 문서는 있는데 docs/decisions/index.md 목록 표에 행이 없다. 목록에 없는 ADR 은 다음 세션이 존재를 모른다 → 표에 행을 추가한다 ('#' 칸에 $id)"
+  done < <(printf '%s' "$adr_files" | sort -u)
+fi
+if [ "$adr_st" = 0 ]; then
+  while IFS= read -r rid; do
+    [ -n "$rid" ] || continue
+    case "$rid" in ADR-*) ;; *) continue ;; esac
+    case "${rid#ADR-}" in ''|*[!0-9]*) continue ;; esac
+    printf '%s' "$adr_files" | grep -qx "$rid" || \
+      bad "$rid — ADR 목록 표에 행은 있는데 문서가 없다 (docs/decisions/) → 오타면 행을 고치고, 아니면 문서를 만든다"
+  done < <(printf '%s\n' "$adr_reg")
+fi
+
+# Story — 활성 문서는 행이 있어야 하고, archive 로 닫힌 문서의 행은 남아 있으면 안 된다.
+reg_check "$ROOT/docs/status/STATUS.md" "활성 병렬 작업" "ID"; st_st=$?
+st_reg=""; [ "$st_st" = 0 ] && st_reg=$(reg_ids "$ROOT/docs/status/STATUS.md" "활성 병렬 작업" "ID")
+if [ "$st_st" != 1 ]; then
+  for f in "$ROOT"/docs/plan/stories/ST-*.md; do
+    [ -e "$f" ] || continue
+    id=$(pre_id_of "$f" "ST"); [ -n "$id" ] || continue
+    printf '%s\n' "$st_reg" | grep -qx "$id" || \
+      bad "$id — 활성 Story 문서는 있는데 docs/status/STATUS.md 활성 병렬 작업 표에 행이 없다 → 표에 행을 추가한다 ('ID' 칸에 $id)"
+  done
+fi
+if [ "$st_st" = 0 ]; then
+  for f in "$ROOT"/docs/plan/archive/stories/ST-*.md; do
+    [ -e "$f" ] || continue
+    id=$(pre_id_of "$f" "ST"); [ -n "$id" ] || continue
+    if printf '%s\n' "$st_reg" | grep -qx "$id"; then
+      bad "$id — Story 는 archive 로 닫혔는데 활성 병렬 작업 표에 행이 남아 있다 → 행을 지운다 (닫힌 Story 는 문서만 archive 에 남긴다)"
+    fi
+  done
+fi
+
 # ── 결과 ─────────────────────────────────────────────────────────────────
 echo
 if [ "$fail" = 0 ] && [ "$warn" = 0 ]; then
@@ -387,6 +561,6 @@ elif [ "$fail" = 0 ]; then
   echo "정합성 검사 통과 (경고 있음)"
 else
   echo "정합성 검사 실패 — 위 항목을 해결한다. 검사를 약화시켜 통과시키지 않는다 (절대 규칙 11)."
-  echo "유형별 해결 경로: .claude/commands/review.md 1단계 표. 사용자 판정이 필요하면 STATUS 의 막힌 것에 ⛔ 로 올리고 멈춘다."
+  echo "유형별 해결 경로: .claude/commands/mdm-review.md 1단계 표. 사용자 판정이 필요하면 STATUS 의 막힌 것에 ⛔ 로 올리고 멈춘다."
   exit 1
 fi

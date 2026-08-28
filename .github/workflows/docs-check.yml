@@ -11,9 +11,11 @@ jobs:
         run: bash scripts/check-docs.sh
       - name: 리뷰 게이트 회귀 검사
         run: bash scripts/test-review-gate.sh
-      - name: 정합성 검사 회귀 검사 (H · 준비도 롤업)
+      - name: 정합성 검사 회귀 검사 (H · 준비도 롤업 · I 등재 대조)
         run: bash scripts/test-consistency.sh
       - name: 리포트 회귀 검사
         run: bash scripts/test-report.sh
-      - name: 문서 검사 회귀 검사 (check-docs.sh 검사 1-c·5~10 이 붉어지는가)
+      - name: 문서 검사 회귀 검사 (check-docs.sh 검사 1-c·5~11 이 붉어지는가)
         run: bash scripts/test-docs-check.sh
+      - name: 설치·업그레이드 회귀 검사 (설치기가 0.7.0 개명의 옛 이름을 건드리지 않는가)
+        run: bash scripts/test-install-upgrade.sh

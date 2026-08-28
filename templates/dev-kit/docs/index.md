@@ -39,6 +39,9 @@ ADR은 `docs/decisions/index.md`의 목록 표에(행은 영구), Story는 `docs
 (**활성 동안만** — 닫힌 Story는 행을 지우고 문서만 `docs/plan/archive/stories/`로 옮긴다).
 여기 없는 새 유형의 문서면 이 카탈로그와 해당 폴더 index에 줄을 더한다.
 등재 없는 문서는 다음 세션이 존재를 모른다 — 카탈로그가 낡는 것이 가장 조용한 드리프트다.
+사이클·ADR·Story의 등재는 도입 후 `.claude/scripts/check-consistency.sh` 검사 I가 대조한다 —
+등재 없는 문서(세 유형 다), 문서 없는 행(사이클·ADR만), archive로 닫힌 Story의 잔존 행이 실패한다.
+문서 없는 Story 행은 잡지 않는다 — 프로파일에 따라 Story는 문서 없이 사이클 문서에만 존재하는 것이 정상이다.
 
 ### 최상위 탐색
 - `index.md` — 파일명·경로·현재성 카탈로그
@@ -52,8 +55,8 @@ ADR은 `docs/decisions/index.md`의 목록 표에(행은 영구), Story는 `docs
 ### guides/ — 단계별 실행 지시서
 - `index.md` — 단계 목록·모드 전환·기본 프롬프트
 - `S0-adopt.md` — 도입 (계획 문서 찾기 · 교차 대조 · ID 정리 · 계약 확인)
-- `plan.md` — 계획이 없을 때 키트가 직접 만든다 (`/plan`)
-- `ready.md` — 준비도 점검: 답이 없는 칸을 구현 전에 찾고, **Story 크기를 판정한다** (`/ready`)
+- `plan.md` — 계획이 없을 때 키트가 직접 만든다 (`/mdm-plan`)
+- `ready.md` — 준비도 점검: 답이 없는 칸을 구현 전에 찾고, **Story 크기를 판정한다** (`/mdm-ready`)
 - `S1-problem.md` — 문제·범위 정의
 - `S2-domain.md` — 도메인·데이터·상태 정의
 - `S3-interface.md` — 인터페이스 설계

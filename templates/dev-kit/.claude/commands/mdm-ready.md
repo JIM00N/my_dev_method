@@ -113,8 +113,8 @@ python3 .claude/scripts/report.py ready
 ## 언제 도나
 
 **정본은 `docs/guides/ready.md` 「언제 도나」 표다** — 여기 옮겨 적지 않는다.
-기본은 **Story를 열기 직전**이고, 나머지 시점(`/adopt` 직후 · 구현 중 *"이럴 땐?"* · `--sync` 재판정 ·
-`/cycle-close` · 사이클 중간 추가)은 그 표가 정한다.
+기본은 **Story를 열기 직전**이고, 나머지 시점(`/mdm-adopt` 직후 · 구현 중 *"이럴 땐?"* · `--sync` 재판정 ·
+`/mdm-cycle-close` · 사이클 중간 추가)은 그 표가 정한다.
 
 ## 경계
 

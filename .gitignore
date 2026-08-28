@@ -33,5 +33,5 @@ docs/reports/
 # HTML 은 md 에서 생성되거나 발표·공유용으로 만들어지는 사본이고, 커밋하면 md 와 갈라진다.
 *.html
 
-# 로컬 전용 — /kit-review 통과 도장 (review-stamp.sh 가 쓰고 .githooks/pre-commit 이 대조한다)
+# 로컬 전용 — /mdm-kit-review 통과 도장 (review-stamp.sh 가 쓰고 .githooks/pre-commit 이 대조한다)
 /.claude/.kit-review-pass

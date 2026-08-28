@@ -1,22 +1,34 @@
 # dev-kit — AI 개발 지시서 템플릿
 
-**버전: 0.6.0** (각 배포본의 버전은 `CLAUDE.md` 첫 줄의 `<!-- dev-kit v… -->` 스탬프로 확인한다)
+**버전: 0.7.0** (각 배포본의 버전은 `CLAUDE.md` 첫 줄의 `<!-- dev-kit v… -->` 스탬프로 확인한다)
 
 AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **범용 지시서 + 문서 골격 + 강제 장치** 세트.
 `my_dev_method` 저장소가 원본이며, 대상 프로젝트 저장소에 복사해서 쓰는 배포본이다.
 
 **계획을 뽑아내는 일은 상류가 한다.** 이 키트가 맡는 것은 그다음 — 이미 있는 계획 문서를 받아
 **구현 중에 문서가 서로 어긋나서 생기는 오류와 일탈을 막는 것**이다.
-**어떤 계획 도구도 전제하지 않는다** — `/adopt`가 저장소 안을 먼저 뒤지고, 없으면 밖에 있는지 묻고,
-그래도 없으면 `/plan`이 직접 만든다. 진입점은 `/adopt` 하나다.
+**어떤 계획 도구도 전제하지 않는다** — `/mdm-adopt`가 저장소 안을 먼저 뒤지고, 없으면 밖에 있는지 묻고,
+그래도 없으면 `/mdm-plan`이 직접 만든다. 진입점은 `/mdm-adopt` 하나다.
 
 ## 파일 소유권 — 설치·업그레이드의 기준 ★
 
 | 구분 | 파일 | 업그레이드 시 |
 |---|---|---|
-| **키트 소유** (프로젝트가 내용을 만들지 않음) | `CLAUDE.md`(§6 고유 규칙 제외) · `AGENTS.md` · `.claude/` 전체 · `docs/guides/` 전체 · `docs/index.md` · `docs/MOC.md` · 각 폴더 `index.md` · 템플릿(`C00-`·`ST-000-`·`ADR-000-`) | 새 판으로 교체 |
+| **키트 소유** (프로젝트가 내용을 만들지 않음) | `CLAUDE.md`(§6 고유 규칙 제외) · `AGENTS.md` · `.claude/` 의 키트 파일(`mdm-` 커맨드·에이전트 · `hooks/` · `scripts/` · `README.md`) · `docs/guides/` 전체 · `docs/index.md` · `docs/MOC.md` · `docs/{upstream,spec,quality,status}/index.md` 와 `*/archive/index.md` · 템플릿(`C00-`·`ST-000-`·`ADR-000-`) | 새 판으로 교체 |
 | **생성물** (형상 관리 제외) | `docs/reports/*.html` — 매번 다시 만들어진다. 정본은 md 다 | 무시 |
-| **프로젝트 소유** (증거·산출물) | `docs/spec/*`의 내용(`source-map.md` 포함) · `docs/upstream/`의 스냅샷과 `manifest.tsv` · `docs/plan/`의 사이클·Story·roadmap 내용 · `docs/quality/*`의 기록 · `docs/status/*` · `docs/decisions/`의 ADR | **절대 덮어쓰지 않는다** |
+| **프로젝트 소유** (증거·산출물) | `docs/spec/*`의 내용(`source-map.md` 포함) · `docs/upstream/`의 스냅샷과 `manifest.tsv` · `docs/plan/`의 사이클·Story·roadmap 내용 · **`docs/plan/index.md` 「사이클 현황」 표**와 **`docs/decisions/index.md` 「목록」 표** · `docs/quality/*`의 기록 · `docs/status/*` · `docs/decisions/`의 ADR · **`.claude/` 안이라도 키트가 만들지 않은 파일** | **절대 덮어쓰지 않는다** |
+
+> **`.claude/` 는 「전체 키트 소유」가 아니다 (0.7.0 정정).** 그 저장소가 자기 슬래시 커맨드를
+> `.claude/commands/` 에 두는 것은 정상이고, 키트는 **자기가 만든 파일만** 교체한다.
+> 0.7.0 개명에서 자리를 비운 옛 이름(`adopt.md`·`review.md` 등 9개)은 **설치기가 아예 건드리지 않는다** —
+> 찾아서 ⚠ 로 알리기만 한다. 처리는 아래 「업그레이드」 **4-1** 에서 사람이 한다.
+>
+> **`settings.json` 은 예외다**: 키트가 만든 파일이지만 프로젝트가 자기 훅을 더할 수 있어
+> **교체하지 않는다** — 키트 판을 `.dev-kit` 사이드카로 두고 손 병합을 요구한다.
+>
+> **`docs/plan/index.md`·`docs/decisions/index.md` 는 0.7.0 에서 프로젝트 소유로 내려왔다.**
+> 그 두 표에 사이클 현황 행·ADR 목록 행이 실리고 정합성 검사 I 가 그것을 정본으로 보기 때문이다.
+> 대가: 그 파일의 핵심 원칙 문단은 업그레이드로 자동 갱신되지 않는다 — CHANGELOG 의 「양식 변경」을 따라 옮겨 적는다.
 
 `docs/upstream/`의 스냅샷은 프로젝트가 소유하지만 **손으로 고치지 않는다** — 정본은 상류에 있고,
 고치면 `.claude/scripts/check-consistency.sh`가 해시로 잡아 실패시킨다.
@@ -44,7 +56,9 @@ cp -R /경로/my_dev_method/templates/dev-kit/.claude .
 말없이 덮어쓴다. 대신:
 
 ```bash
-cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev-kit/.claude/agents .claude/
+cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/scripts \
+      /경로/dev-kit/.claude/commands /경로/dev-kit/.claude/agents .claude/
+# scripts/ 를 빠뜨리면 check-consistency.sh·report.py 가 영영 옛 판에 머문다
 # settings.json은 기존 파일에 dev-kit의 hooks 항목을 손으로 병합한다 (jq 또는 편집기)
 ```
 
@@ -56,21 +70,49 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 2. `docs/status/STATUS.md`에 시작 시점 기록
 3. `jq` 설치 확인 (`jq --version`) — 없으면 guard 훅 2개가 경고만 남기고 통과한다
 4. 업무 자동화·AX 컨설팅 프로젝트면 `docs/guides/addons/business-automation.md`를 확인한다 (`CLAUDE.md` 라우팅 표에 이미 연결되어 있다)
-5. **`/adopt`를 실행한다** (현재 단계 `S0`) — 계획 문서가 있든 없든 진입점은 하나다.
-   저장소 안을 먼저 뒤지고, 없으면 밖에 있는지 묻고, 그래도 없으면 `/plan`으로 보내 직접 만든다.
+5. **`/mdm-adopt`를 실행한다** (현재 단계 `S0`) — 계획 문서가 있든 없든 진입점은 하나다.
+   저장소 안을 먼저 뒤지고, 없으면 밖에 있는지 묻고, 그래도 없으면 `/mdm-plan`으로 보내 직접 만든다.
 6. 프로파일(Lite/Standard/Full) 판정 — `docs/guides/profiles.md`. 계획 문서가 사분면을 주지 않으므로 이건 거의 항상 갭이다
 7. `docs/spec/code-conventions.md`를 해당 기술 스택의 실제 검사 명령과 규칙으로 확정하고, **그 명령을 한 번 실행해 본다**
 
 ## 업그레이드 (이미 키트를 쓰는 저장소)
 
-`install-kit.sh --upgrade`가 아래 1~3을 대신 수행한다 (키트 소유만 교체, `CLAUDE.md`는 `CLAUDE.md.dev-kit-new`로 두어 수동 병합).
+`install-kit.sh --upgrade`가 아래 **1과 3**을 대신 수행한다 — 키트 소유만 교체하고,
+`CLAUDE.md`는 `CLAUDE.md.dev-kit-new`로 두어 수동 병합을 남긴다.
+**2·4·4-1·5·6 은 사람이 한다.** 특히 **4-1 은 설치기가 절대 대신하지 않는다**(그 이유는 4-1 에 적었다).
 `cp -R docs .`를 다시 실행하지 않는다 — 프로젝트가 쌓아온 spec·이슈·STATUS·ADR이 전부 파괴된다.
 
 1. `CLAUDE.md` 첫 줄 스탬프로 현재 버전을 확인한다.
 2. 원본 저장소의 `CHANGELOG.md`에서 그 버전 이후의 변경을 읽는다.
 3. **키트 소유 파일만** 새 판으로 교체한다 (위 표). `CLAUDE.md`는 교체 후 프로젝트명과 §6 고유 규칙을 되살린다.
 4. 프로젝트 소유 파일은 CHANGELOG가 양식 변경을 명시한 경우에만, 기존 내용을 새 양식으로 **옮겨 적는다.**
+4-1. **개명된 옛 이름을 물린다 — 이것은 사람이 한다.** 이 단계를 빠뜨리면 `/adopt`와 `/mdm-adopt`가
+   한 저장소에 **둘 다 뜨고**, 옛 판이 그 버전에 멈춘 채 새 판과 다른 절차를 지시한다 — 정본이 둘이 된다.
+   **설치기는 이 일을 하지 않는다.** 「이 파일이 키트 것인가, 이 저장소가 만든 것인가」를 스크립트는
+   알 방법이 없고, 그것을 추측한 두 판이 모두 사용자 파일을 잃게 만들었다(0.7.0 리뷰에서 치명 2회).
+   설치기는 옛 이름 파일을 **찾아서 ⚠ 로 알리기만** 한다. 파일을 열어 키트의 옛 판이 맞는지 확인한 뒤:
+
+   ```bash
+   for f in adopt plan ready review stage cycle-close ingest-errors; do
+     [ -e ".claude/commands/mdm-$f.md" ] && [ -e ".claude/commands/$f.md" ] \
+       && mv ".claude/commands/$f.md" ".claude/commands/$f.md.dev-kit-0.6-retired"
+   done
+   for a in code-review error-learning; do
+     [ -e ".claude/agents/mdm-$a.md" ] && [ -e ".claude/agents/$a.md" ] \
+       && mv ".claude/agents/$a.md" ".claude/agents/$a.md.dev-kit-0.6-retired"
+   done
+   ```
+
+   **지우지 말고 확장자만 떼라** — `.md` 가 아니면 등록에서 빠지고 파일은 남는다.
+   `.claude/commands` 가 공용 디렉토리를 가리키는 **심볼릭 링크**면 그 디렉토리의 파일이 바뀐다 — 먼저 확인해라.
+   그 이름이 이 저장소 자신의 커맨드라면 **그대로 두면 된다.** 그때는 새 이름과 공존해도 문제가 없다.
+
+   물린 파일을 확인하고 지웠다면 **문서에 남은 옛 이름 참조도 함께 고친다.**
+   정합성 검사 F(참조 깨짐)가 방금 지운 옛 이름을 가리키는 참조를 잡거든
+   **그 파일을 되만들지 말고 참조를 새 이름으로 고쳐라** — 되만들면 「정본 둘」로 되돌아간다.
 5. `/hooks`로 훅 등록을 확인하고, STATUS의 최근 결정에 업그레이드 사실을 한 줄 남긴다.
+6. **세션을 다시 시작한다** — 커맨드·에이전트 목록은 세션 시작 시점에 읽히므로, 개명 직후 같은 세션에서는
+   새 이름이 잡히지 않는다.
 
 ## 이 키트가 강제하는 것
 
@@ -79,31 +121,31 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 | **계획 문서 여러 장이 서로 어긋난 채 구현 시작** | S0 도입의 교차 대조 | 절차 |
 | **유저플로우를 상태 전이표로 착각 → 에이전트가 상태를 지어냄** | S0 계약 확인 (전이표는 어느 도구도 안 담는다) | 절차 |
 | **검증 조건 5개짜리 요구사항이 테스트 1개로 완료됨** | 매핑표 `조건 수` 칸 — 조건 하나당 테스트 하나 | **스크립트** |
-| **계획 도구가 없어서 시작을 못 함** | `/plan` — 압박 → 묶어 묻기 → 작성 → 검증. 외부 의존 0 | 절차 |
-| **답이 없는 칸을 남긴 채 구현 시작 → 에이전트가 지어냄** | `/ready` — Story 슬롯 12칸을 AI가 채우고 갈리는 것만 질문 | **절차** (12칸을 읽는 검사는 없다) |
+| **계획 도구가 없어서 시작을 못 함** | `/mdm-plan` — 압박 → 묶어 묻기 → 작성 → 검증. 외부 의존 0 | 절차 |
+| **답이 없는 칸을 남긴 채 구현 시작 → 에이전트가 지어냄** | `/mdm-ready` — Story 슬롯 12칸을 AI가 채우고 갈리는 것만 질문 | **절차** (12칸을 읽는 검사는 없다) |
 | 그 판정을 안 하고 사이클을 연다 | 매핑표 `준비` 칸이 진행 중인데 미달(빈 칸·`❌`·재판정)이면 실패 | **스크립트** (칸의 값만 본다) |
-| **Story가 커서 한 에이전트가 감당 못 함 → 영향 범위가 번짐** | `/ready` 2단계 크기 판정 — 트리거 하나·종료 상태 하나가 될 때까지 나눈다 | 절차 |
+| **Story가 커서 한 에이전트가 감당 못 함 → 영향 범위가 번짐** | `/mdm-ready` 2단계 크기 판정 — 트리거 하나·종료 상태 하나가 될 때까지 나눈다 | 절차 |
 | **도메인 규칙("거부하면 어디까지 막나")이 저장될 곳이 없음** | `domain.md` 5절 비즈니스 규칙 표 (규칙 · 어기면 무슨 일이) | 절차 |
 | **md 를 사람이 읽기 어려워 판정을 미룸** | `report.py` — 판정할 것이 많은 4시점에 HTML 한 장 | 절차 |
 | **같은 것이 상류와 저장소에 두 벌로 생겨 갈라짐** | S0 계약 확인이 정본 소유권을 판정 | 절차 |
 | **어느 요구사항 근거로 만드는지 추적 불가** | `docs/spec/source-map.md`의 요구사항 ID·화면 ID 추적 | **스크립트** |
 | **구현 중 문서-코드 정합이 깨짐** | 고아 인용·미커버 요구사항·화면 불일치·참조 깨짐 검사 | **스크립트** |
-| **상류가 바뀐 것을 모른 채 계속 지음** | `/adopt --sync` → 재검토 표시 → 처리 전까지 검사 실패 | **스크립트** |
+| **상류가 바뀐 것을 모른 채 계속 지음** | `/mdm-adopt --sync` → 재검토 표시 → 처리 전까지 검사 실패 | **스크립트** |
 | AI가 뭘 만들지 모른 채 코딩 시작 | S1~S4 설계 단계 + 각 단계 DoD | 절차 |
 | 세션이 끊기면 맥락 소실 | `docs/status/STATUS.md` 활성 스냅샷 1장 + 유형별 archive | **훅** |
 | "완료했습니다"의 실체 없음 | 단계별 완료 조건(DoD) + 실행 가능한 검사 명령 | 절차 |
-| **초록불을 위해 테스트·타입 검사를 약화** | 절대 규칙 11 + `code-conventions.md` 5-1 + `/review` | **서브에이전트** |
+| **초록불을 위해 테스트·타입 검사를 약화** | 절대 규칙 11 + `code-conventions.md` 5-1 + `/mdm-review` | **서브에이전트** |
 | 회귀를 아무도 못 잡음 | S6 3절 TDD (RED → GREEN) | 절차 |
 | 수동 검수가 사이클이 늘수록 죽음 | S6 5-4 — 버그 잡은 시나리오는 자동 테스트로 승격 | 절차 |
 | 버그가 기록 없이 사라짐 | `docs/quality/issues.md` 강제 기록 | 절차 |
-| 같은 실수 반복 | 2회 재발 시 `rules-learned.md` 규칙 승격 (`/ingest-errors`) | **서브에이전트** |
+| 같은 실수 반복 | 2회 재발 시 `rules-learned.md` 규칙 승격 (`/mdm-ingest-errors`) | **서브에이전트** |
 | AI가 기술을 임의 선택 | `docs/spec/stack.md` 사전 확정 (설치 명령·매니페스트 편집 감시) | **훅** |
 | 비밀값이 저장소에 들어감 | 커밋(`-a` 포함)·파일 쓰기 시점 검사 | **훅** |
 | 코드 품질·명명·검사 기준이 프로젝트마다 흔들림 | S4의 `docs/spec/code-conventions.md` + 실행 가능한 검사 명령 | 절차 |
 | 계층 문서를 AI가 안 읽음 | `CLAUDE.md`의 **상황별 라우팅 표** | 절차 |
 | 한 번에 다 만들려다 붕괴 | `docs/plan/cycles/` 사이클 분할 | 절차 |
 | 병렬 작업이 같은 파일을 덮어씀 | `docs/plan/stories/` 영향 범위·권한 계약 | 절차 |
-| spec/이 시간이 갈수록 소설이 됨 | 사이클 종료 시 스펙 드리프트 대조 (`/cycle-close`) | 절차 |
+| spec/이 시간이 갈수록 소설이 됨 | 사이클 종료 시 스펙 드리프트 대조 (`/mdm-cycle-close`) | 절차 |
 | 절차가 프로젝트 크기에 비해 과함 | 프로파일 → **각 가이드 DoD의 프로파일 표식** | 절차 |
 | 문서가 시간이 갈수록 비대해짐 | 파일별 상한·이동처·실행 주체 (STATUS 200줄 등) | 절차·훅 |
 
@@ -115,7 +157,7 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 | 단계 | 이름 | 산출물 | 스킵 조건 |
 |---|---|---|---|
 | **S0** | **도입 — 계획 문서 찾아 받아들이기** | `docs/upstream/` · `docs/spec/source-map.md` | 없음 — 모든 프로젝트의 진입점 |
-| (S0 분기) | 계획이 없을 때 — 키트가 직접 만든다 (`/plan`) | `docs/upstream/plan.md` | 계획 문서를 찾았으면 스킵 |
+| (S0 분기) | 계획이 없을 때 — 키트가 직접 만든다 (`/mdm-plan`) | `docs/upstream/plan.md` | 계획 문서를 찾았으면 스킵 |
 | S1 | 문제·범위 정의 | `docs/spec/product.md` (+ 프로파일 판정) | 없음 |
 | S2 | 도메인·데이터·상태 | `docs/spec/domain.md` | 저장할 데이터가 없으면 축약 |
 | S3 | 인터페이스 설계 | `docs/spec/interface.md` | 없음 (형태만 달라짐) |
@@ -129,7 +171,7 @@ cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/commands /경로/dev
 다만 **무엇이 갭인지는 상류마다 다르므로 단정하지 않고 확인한다** — 권한·데이터를 담아 주는 도구도 있다.
 
 S1~S4는 **설계**다. 여기 품질이 전체를 결정하므로 추론을 가장 높게 쓴다 (Claude Code `ultrathink`, Codex reasoning effort `high` 이상).
-S5~S6은 **구현**이다. 모드가 인터뷰에서 "구현 → `/review` → 검수 요청 → 피드백 → 수정 반복"으로 바뀐다.
+S5~S6은 **구현**이다. 모드가 인터뷰에서 "구현 → `/mdm-review` → 검수 요청 → 피드백 → 수정 반복"으로 바뀐다.
 
 절차량은 프로파일이 정한다. 단, **어느 프로파일에서도 줄이지 않는 것**이 있다 — `docs/guides/profiles.md`.
 

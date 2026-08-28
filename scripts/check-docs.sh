@@ -9,12 +9,13 @@
 #  4)   셸·파이썬·JSON 문법
 #  5)   `파일.md` 「절 이름」 포인터의 절 이름이 그 파일에 실재
 #  6)   report.py 가 하드코딩한 절 이름이 키트 양식에 실재
-#  7)   `/kit-review` 축↔에이전트 표와 `.claude/agents/*.md` 실물이 일치
+#  7)   `/mdm-kit-review` 축↔에이전트 표와 `.claude/agents/*.md` 실물이 일치
 #  8)   (로컬 전용) issues.md 의 이슈 번호가 유일
 #  9)   쓰기 도구를 가진 리뷰 에이전트에 임시 디렉토리 제한 문장이 있음
 #  10)  이 저장소에서 밟은 셸 함정 재발 lint ($변수+멀티바이트 · awk 한글 ==)
-# 1-c·5~10 은 `scripts/check-docs.py` 가 맡는다 (로케일·멀티바이트 안전).
-# 붉어지는 증거는 `scripts/test-docs-check.sh` 에 있다 — 다만 **검사 1-c·5·6·7·8·9·10 까지**다.
+#  11)  키트가 배포하는 `.claude/{commands,agents}/*.md` 의 파일명·`name:` 이 전부 `mdm-` 접두
+# 1-c·5~11 은 `scripts/check-docs.py` 가 맡는다 (로케일·멀티바이트 안전).
+# 붉어지는 증거는 `scripts/test-docs-check.sh` 에 있다 — 다만 **검사 1-c·5·6·7·8·9·10·11 까지**다.
 # 검사 1·1-b·2·3·4 는 아직 증거가 없다(이슈 #159). 여기 '각 분기'라고 쓰지 않는다.
 # 플레이스홀더(<n>, C<nn>, ST-<nnn>, ADR-<nnn>, *, 예시 경로)는 검사하지 않는다.
 set -uo pipefail
@@ -125,7 +126,7 @@ fi
 if command -v python3 >/dev/null 2>&1; then
   python3 "$ROOT/scripts/check-docs.py" || fail=1
 else
-  echo "python3 가 없어 문서·에이전트·셸 검사(1-c·5~10)를 돌릴 수 없다"
+  echo "python3 가 없어 문서·에이전트·셸 검사(1-c·5~11)를 돌릴 수 없다"
   fail=1
 fi
 

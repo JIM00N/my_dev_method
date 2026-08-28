@@ -32,6 +32,9 @@
 ## 활성 병렬 작업
 
 현재 열려 있는 Story·검수·조사만 한 줄씩 적는다. 상세 상태·DoD·영향 범위·권한 계약은 해당 `docs/plan/cycles/`·`docs/plan/stories/` 문서에 둔다.
+Story 문서를 가진 행의 `ID` 칸에는 파일명의 `ST-<nnn>`을 그대로 적는다 — 활성 Story 문서가 이 표에 없거나,
+archive로 닫힌 Story의 행이 남아 있으면 도입 후 `.claude/scripts/check-consistency.sh` 검사 I가 실패시킨다.
+(문서 없는 Story 행은 정상이다 — 프로파일에 따라 Story는 사이클 문서에만 존재한다.)
 
 | ID | 작업 | 담당 에이전트 | 상태 | 상세 문서 | 다음 행동 |
 |---|---|---|---|---|---|

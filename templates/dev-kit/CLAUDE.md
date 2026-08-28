@@ -1,4 +1,4 @@
-<!-- dev-kit v0.6.0 · 원본: my_dev_method/templates/dev-kit · 업그레이드 절차: 원본 저장소 templates/dev-kit/README.md -->
+<!-- dev-kit v0.7.0 · 원본: my_dev_method/templates/dev-kit · 업그레이드 절차: 원본 저장소 templates/dev-kit/README.md -->
 
 # &lt;괄호 안에 프로젝트명 작성할 것.&gt;
 
@@ -16,7 +16,7 @@
 3. 그 가이드가 "입력"으로 지정한 문서만 추가로 읽는다.
 
 `docs/` 전체를 한 번에 읽지 않는다. 위 3단계로 좁혀서 읽는다.
-`/stage`가 이 순서를 대신 수행한다.
+`/mdm-stage`가 이 순서를 대신 수행한다.
 
 ## 1. 상황별 라우팅 표 ★
 
@@ -24,10 +24,10 @@
 | 이런 상황이면                                                              | 반드시 읽고                                                                             | 반드시 쓴다                                                                 |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | 세션 시작 / 뭘 할지 모를 때                                                    | `docs/status/STATUS.md`                                                            | —                                                                      |
-| **프로젝트를 시작할 때 (계획 문서 유무와 무관)**                                       | `docs/guides/S0-adopt.md`                                                          | `/adopt` 실행 → `docs/spec/source-map.md`                                |
-| `/adopt`가 계획 문서를 못 찾았을 때                                             | `docs/guides/plan.md`                                                              | `/plan` 실행 → `docs/upstream/plan.md`                                   |
-| **Story 를 열기 직전**                                                    | `docs/guides/ready.md`                                                             | `/ready` 실행 → Story 슬롯 12칸 · **크기 판정** · 매핑표 `준비` 칸                    |
-| 구현 중 "이럴 땐 어떻게 하지?"가 나왔을 때                                           | `docs/guides/ready.md`                                                             | `/ready` 실행 (지어내지 않는다)                                                 |
+| **프로젝트를 시작할 때 (계획 문서 유무와 무관)**                                       | `docs/guides/S0-adopt.md`                                                          | `/mdm-adopt` 실행 → `docs/spec/source-map.md`                                |
+| `/mdm-adopt`가 계획 문서를 못 찾았을 때                                             | `docs/guides/plan.md`                                                              | `/mdm-plan` 실행 → `docs/upstream/plan.md`                                   |
+| **Story 를 열기 직전**                                                    | `docs/guides/ready.md`                                                             | `/mdm-ready` 실행 → Story 슬롯 12칸 · **크기 판정** · 매핑표 `준비` 칸                    |
+| 구현 중 "이럴 땐 어떻게 하지?"가 나왔을 때                                           | `docs/guides/ready.md`                                                             | `/mdm-ready` 실행 (지어내지 않는다)                                                 |
 | 어떤 요구사항 근거로 만드는지 확인할 때                                               | `docs/spec/source-map.md`                                                          | —                                                                      |
 | 새 단계에 진입할 때                                                          | `docs/guides/S<n>-*.md`                                                            | 해당 `docs/spec/*.md`                                                    |
 | S1에서 사분면을 확정한 직후                                                     | `docs/guides/profiles.md`                                                          | `docs/spec/product.md` 프로파일 칸                                          |
@@ -35,18 +35,18 @@
 | 절차가 무겁게 느껴질 때                                                        | `docs/guides/profiles.md`                                                          | — (프로파일을 낮추지 말고 확인한다)                                                  |
 | 새 기술·권한·구조 결정을 할 때                                                   | `docs/guides/decision-modes.md`                                                    | `docs/spec/stack.md` 또는 ADR                                            |
 | 코드를 한 줄이라도 쓰기 전                                                      | `docs/spec/stack.md`, `docs/spec/architecture.md`, `docs/spec/code-conventions.md` | —                                                                      |
-| 새 기능·사이클을 시작할 때                                                      | `docs/plan/roadmap.md`                                                             | `docs/plan/cycles/C<nn>-*.md` · `**/adopt --sync` 실행**                 |
+| 새 기능·사이클을 시작할 때                                                      | `docs/plan/roadmap.md`                                                             | `docs/plan/cycles/C<nn>-*.md` · `**/mdm-adopt --sync` 실행**                 |
 | Story 문서를 만들 때 (**대상은 `docs/guides/profiles.md` 「Story 문서」 행이 정한다**) | `docs/plan/stories/ST-000-template.md`                                             | `docs/plan/stories/ST-<nnn>-*.md`                                      |
 | 새 행동을 구현할 때                                                          | `docs/guides/S6-build.md` 3절                                                       | 테스트 먼저(RED) → 구현                                                       |
-| 구현 한 덩어리가 끝났을 때                                                      | —                                                                                  | `/review` 실행 (1단계 정합성 검사 → 2단계 `code-review` 서브에이전트)                   |
-| **정합성 검사가 실패했을 때**                                                   | `.claude/commands/review.md` 1단계 **실패 유형별 해결 경로 표**                                | 그 표가 가리키는 것을 처리한다 — 보고만 하고 끝내지 않는다                                     |
+| 구현 한 덩어리가 끝났을 때                                                      | —                                                                                  | `/mdm-review` 실행 (1단계 정합성 검사 → 2단계 `mdm-code-review` 서브에이전트)                   |
+| **정합성 검사가 실패했을 때**                                                   | `.claude/commands/mdm-review.md` 1단계 **실패 유형별 해결 경로 표**                                | 그 표가 가리키는 것을 처리한다 — 보고만 하고 끝내지 않는다                                     |
 | 버그·리뷰 지적을 발견했을 때                                                     | `docs/quality/index.md`                                                            | `docs/quality/issues.md` (즉시 기록)                                       |
-| 새 에러 기록을 종합·학습할 때                                                    | —                                                                                  | `/ingest-errors` 실행 (`error-learning` 서브에이전트에 위임 — Main이 직접 쓰지 않는다)    |
+| 새 에러 기록을 종합·학습할 때                                                    | —                                                                                  | `/mdm-ingest-errors` 실행 (`mdm-error-learning` 서브에이전트에 위임 — Main이 직접 쓰지 않는다)    |
 | 검수를 시작할 때                                                            | `docs/quality/test-scenarios.md`                                                   | `docs/quality/issues.md`                                               |
 | 검수가 버그를 잡았을 때                                                        | `docs/guides/S6-build.md` 5-4                                                      | 그 시나리오의 자동 테스트                                                         |
-| 같은 유형 문제가 2번째일 때                                                     | `docs/quality/issues.md`                                                           | `/ingest-errors` 실행 (규칙 승격은 `error-learning`이 한다)                      |
+| 같은 유형 문제가 2번째일 때                                                     | `docs/quality/issues.md`                                                           | `/mdm-ingest-errors` 실행 (규칙 승격은 `mdm-error-learning`이 한다)                      |
 | 되돌리기 어려운 선택을 할 때                                                     | `docs/decisions/index.md`                                                          | `docs/decisions/ADR-<nnn>-*.md`                                        |
-| 사이클을 닫을 때                                                            | `docs/guides/S6-build.md` 8절                                                       | `/cycle-close` 실행 결과 · `docs/status/STATUS.md`                         |
+| 사이클을 닫을 때                                                            | `docs/guides/S6-build.md` 8절                                                       | `/mdm-cycle-close` 실행 결과 · `docs/status/STATUS.md`                         |
 | 작업을 끝낼 때 (매번)                                                        | —                                                                                  | `docs/status/STATUS.md`                                                |
 | 업무 자동화·AX 프로젝트일 때                                                    | `docs/guides/addons/business-automation.md`                                        | —                                                                      |
 
@@ -61,7 +61,7 @@
 3. **"완료했습니다"라고 말하기 전에** 해당 DoD 체크리스트를 실제로 대조한다. 대조하지 않은 완료 보고는 금지.
  `(사람 확인)` 항목은 에이전트가 대신 체크하지 않는다 — 사용자에게 요청하고 받은 답을 기록한다.
 4. **기술 스택을 임의로 고르지 않는다.** `docs/spec/stack.md`에 없는 라이브러리·서비스를 도입하려면 먼저 사용자에게 선택지와 근거를 제시하고 승인받는다.
-5. **에러는 발생할 때마다 기록 후 고친다.** `docs/quality/issues.md`에 먼저 적고 수정한다. 새 기록은 별도 `error-learning` 에이전트가 종합·인제스트한다. 기록 없이 고치면 재발 패턴이 보이지 않는다.
+5. **에러는 발생할 때마다 기록 후 고친다.** `docs/quality/issues.md`에 먼저 적고 수정한다. 새 기록은 별도 `mdm-error-learning` 에이전트가 종합·인제스트한다. 기록 없이 고치면 재발 패턴이 보이지 않는다.
 6. **검수 없이 배포하지 않는다.** `docs/quality/test-scenarios.md`의 시나리오를 사람이 통과시킨 뒤에만 배포한다.
 7. **한 번에 끝까지 만들지 않는다.** 사이클(MVP) 단위로 자른다 — 구축 → 검수 → 안정화 → 배포 → 다음 사이클.
 8. **과설계를 잘라낸다.** 스스로 제안한 것이 요구사항보다 크면 축소안을 함께 제시한다.
@@ -71,13 +71,13 @@
   금지 목록의 정본은 `docs/spec/code-conventions.md` 5-1 표다 — 테스트 삭제·skip, 단언 완화,
   타입 오류 덮기, 예외 삼킴, 린트 disable, 참조 미확인 삭제, 스펙 항목 은폐, 훅 우회.
   **막히면 `issues.md`에 적고 막혔다고 보고한다.** 초록불은 목표가 아니라 증거다.
-  리뷰는 `/review`(`code-review` 서브에이전트)가 이 표를 기준으로 잡는다.
+  리뷰는 `/mdm-review`(`mdm-code-review` 서브에이전트)가 이 표를 기준으로 잡는다.
 12. **비밀값을 코드·저장소에 넣지 않는다.** 키·비밀번호·토큰은 환경 변수나 비밀값 관리 도구에 두고 코드에서는 참조만 한다.
   `.env` 류는 형상 관리에서 제외한다 (`.env.example`만 남긴다). 유출됐으면 즉시 폐기·재발급한다.
 13. **커밋 정책을 지킨다.** ★ 정본은 `docs/spec/product.md`의 커밋 정책 칸이다 (`docs/guides/commit-policy.md`).
   **승인 모드**면 리뷰 통과 뒤 **묻고 답을 받아야** 커밋하고, **보고 모드**면 커밋한 뒤 **결과를 보고한다.**
   물을 때도 보고할 때도 **전문 용어가 아니라 무엇이 바뀌었는지·리뷰 결과·남은 지적**을 준다 —
-  재료 없이 물으면 판정이 아니라 형식이 된다. 어느 모드든 `**/review` 통과 없이 커밋하지 않는다.**
+  재료 없이 물으면 판정이 아니라 형식이 된다. 어느 모드든 `**/mdm-review` 통과 없이 커밋하지 않는다.**
   **모드와 무관하게 승인받는 것**의 정본은 `commit-policy.md`의 「어느 쪽이든 반드시 묻는 것」 표다 —
   push·배포·태그 · 이력 재작성 · 되돌릴 수 없는 외부 행동 — **범위와 예외는 그 표가 정한다.**
   번거롭다는 이유로 모드를 임의로 바꾸지 않는다 (규칙 11과 같은 계열).
@@ -104,9 +104,9 @@
 | S6      | 구축·검수·배포                            | `docs/guides/S6-build.md`        | 코드, 테스트, `docs/quality/*`                                                          |
 
 
-- **진입점은 S0 하나다.** 특정 계획 도구를 전제하지 않는다. `/adopt`가 계획 문서를
-**저장소 안에서 먼저 찾고**, 없으면 밖에 있는지 묻고, 그래도 없으면 `/plan`으로 보낸다 —
-`/plan`이 만든 계획도 S0로 돌아온다. 어느 경로든 S1~S5를 처음부터 밟지 않고,
+- **진입점은 S0 하나다.** 특정 계획 도구를 전제하지 않는다. `/mdm-adopt`가 계획 문서를
+**저장소 안에서 먼저 찾고**, 없으면 밖에 있는지 묻고, 그래도 없으면 `/mdm-plan`으로 보낸다 —
+`/mdm-plan`이 만든 계획도 S0로 돌아온다. 어느 경로든 S1~S5를 처음부터 밟지 않고,
 S0의 **계약 확인이 `❌ 갭`으로 판정한 절만** 편다.
 갭은 대체로 S2 ③④(상태 전이표·권한 표)와 S4 2·4부(스택·검사 명령·안정성)다.
 **무엇이 갭인지는 상류마다 다르므로 단정하지 않고 확인한다** — 권한·데이터를 담아 주는 상류도 있다.
@@ -136,8 +136,8 @@ Claude Code는 `ultrathink`(또는 `/model`에서 상위 모델), Codex는 reaso
 
 | 스크립트                                   | 무엇을 잡나                                                                                                                          | 언제                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `.claude/scripts/check-consistency.sh` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 · **마일스톤 배치** | `/review` 1단계 · 사이클 시작·종료 · CI             |
-| `.claude/scripts/report.py`            | (검사 아님) md를 읽어 보기 쉬운 HTML 한 장으로 그린다                                                                                             | `/adopt`·`/plan`·`/ready`·`/cycle-close` 끝 |
+| `.claude/scripts/check-consistency.sh` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 · **마일스톤 배치** · **문서 등재 대조** | `/mdm-review` 1단계 · 사이클 시작·종료 · CI             |
+| `.claude/scripts/report.py`            | (검사 아님) md를 읽어 보기 쉬운 HTML 한 장으로 그린다                                                                                             | `/mdm-adopt`·`/mdm-plan`·`/mdm-ready`·`/mdm-cycle-close` 끝 |
 
 
 **문서 정합성은 사람도 서브에이전트도 아니라 이 스크립트가 지킨다.** 기계가 확정적으로 잡을 수 있는 것을
@@ -146,11 +146,11 @@ Claude Code는 `ultrathink`(또는 `/model`에서 상위 모델), Codex는 reaso
 
 | 서브에이전트                              | 언제                        | 왜 분리하나                            |
 | ----------------------------------- | ------------------------- | --------------------------------- |
-| `code-review` (`/review` 2단계)       | 구현 한 덩어리 끝날 때 · 사이클 닫기 전  | 구현한 컨텍스트는 자기 우회(규칙 11 위반)를 보지 못한다 |
-| `error-learning` (`/ingest-errors`) | 새 에러 기록이 쌓였을 때 · 사이클 종료 시 | 구현 관점과 학습 관점을 섞으면 규칙 승격이 안 일어난다   |
+| `mdm-code-review` (`/mdm-review` 2단계)       | 구현 한 덩어리 끝날 때 · 사이클 닫기 전  | 구현한 컨텍스트는 자기 우회(규칙 11 위반)를 보지 못한다 |
+| `mdm-error-learning` (`/mdm-ingest-errors`) | 새 에러 기록이 쌓였을 때 · 사이클 종료 시 | 구현 관점과 학습 관점을 섞으면 규칙 승격이 안 일어난다   |
 
 
-커맨드: `/adopt [--sync]` 도입·상류 동기화 · `/plan` 계획이 없을 때 직접 만들기 · `/ready` 준비도 점검 · `/stage [n]` 단계 진입 · `/review` 정합성 검사 + 코드리뷰 · `/cycle-close` 사이클 종료 점검 · `/ingest-errors` 학습 인제스트
+커맨드: `/mdm-adopt [--sync]` 도입·상류 동기화 · `/mdm-plan` 계획이 없을 때 직접 만들기 · `/mdm-ready` 준비도 점검 · `/mdm-stage [n]` 단계 진입 · `/mdm-review` 정합성 검사 + 코드리뷰 · `/mdm-cycle-close` 사이클 종료 점검 · `/mdm-ingest-errors` 학습 인제스트
 
 **훅이 막았다고 우회하지 않는다.** 막힌 이유를 해결하거나 사용자에게 보고한다.
 

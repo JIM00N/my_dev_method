@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check-docs.sh 의 문서·에이전트·셸 검사 (1-c · 5 · 6 · 7 · 8 · 9 · 10).
+"""check-docs.sh 의 문서·에이전트·셸 검사 (1-c · 5 · 6 · 7 · 8 · 9 · 10 · 11).
 
 **왜 bash+grep 이 아닌가.** 로케일 때문이다 — `[^「]` 같은 부정 문자클래스는 C/POSIX 로케일에서
 **바이트 클래스**가 되어 `—`(E2 80 94)·`…`(E2 80 A6)·`가`(EA B0 80) 안의 바이트 `0x80` 에 걸린다.
@@ -20,7 +20,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 KIT = os.path.join(ROOT, "templates", "dev-kit")
 AGENTS = os.path.join(ROOT, ".claude", "agents")
-KITREVIEW = os.path.join(ROOT, ".claude", "commands", "kit-review.md")
+KITREVIEW = os.path.join(ROOT, ".claude", "commands", "mdm-kit-review.md")
 
 problems = []
 
@@ -291,7 +291,7 @@ def check_7():
         bad("에이전트 디렉토리가 없다: %s — 축↔에이전트 검사가 꺼진다 (조용히 넘어가지 않는다)" % rel(AGENTS))
         return
     if not os.path.exists(KITREVIEW):
-        bad("kit-review.md 가 없다: %s" % rel(KITREVIEW))
+        bad("mdm-kit-review.md 가 없다: %s" % rel(KITREVIEW))
         return
     krv = read(KITREVIEW)
     table = {}
@@ -314,19 +314,19 @@ def check_7():
 
     for axis, agent in sorted(table.items()):
         if agent not in names:
-            bad("kit-review.md 표가 없는 에이전트를 가리킨다: %s (축 %s)" % (agent, axis))
+            bad("mdm-kit-review.md 표가 없는 에이전트를 가리킨다: %s (축 %s)" % (agent, axis))
             continue
         # 축 열 ↔ 에이전트 이름이 어긋나면 오배선이다 — 표만 보고는 안 드러난다
-        m = re.fullmatch(r"kit-review-k(\d+)", agent)
+        m = re.fullmatch(r"mdm-kit-review-k(\d+)", agent)
         if m and m.group(1) != axis[1:]:
             bad("축 오배선: 표의 축 %s 행이 `%s` 를 가리킨다 (축 번호와 에이전트 번호가 다르다)"
                 % (axis, agent))
 
     for n, p in sorted(names.items()):
-        if n.startswith("kit-review-") and n not in table.values():
-            bad("에이전트가 kit-review.md 축 표에 없다 (그 축은 안 돌아간다): %s" % n)
-        elif not n.startswith("kit-review-") and "`%s`" % n not in krv:
-            bad("에이전트가 kit-review.md 어디에도 없다: %s (%s)" % (n, rel(p)))
+        if n.startswith("mdm-kit-review-") and n not in table.values():
+            bad("에이전트가 mdm-kit-review.md 축 표에 없다 (그 축은 안 돌아간다): %s" % n)
+        elif not n.startswith("mdm-kit-review-") and "`%s`" % n not in krv:
+            bad("에이전트가 mdm-kit-review.md 어디에도 없다: %s (%s)" % (n, rel(p)))
 
 
 # ── 8. (로컬 전용) issues.md 이슈 번호 유일성 ──────────────────────────
@@ -429,7 +429,41 @@ def check_10():
 
 
 
-for fn in (check_1c, check_5, check_6, check_7, check_8, check_9, check_10):
+# ── 11. 키트가 배포하는 커맨드·에이전트는 전부 `mdm-` 으로 시작한다 ────
+# 0.7.0 이 「이름 공간을 하나 차지한다」고 선언했다. 선언만 있고 장치가 없으면
+# 다음에 `deploy.md` 하나가 조용히 들어와 그 저장소 것과 부딪친다 (절대 규칙 3).
+# 파일명과 frontmatter `name:` 을 **둘 다** 본다 — 하나만 보면 다른 하나가 드리프트한다.
+KIT_CLAUDE = os.path.join(KIT, ".claude")
+
+
+def check_11():
+    seen = 0
+    for sub in ("commands", "agents"):
+        d = os.path.join(KIT_CLAUDE, sub)
+        if not os.path.isdir(d):
+            bad("키트 %s 디렉토리가 없다: %s — 검사 11 이 그 몫을 못 본다 (조용히 넘어가지 않는다)"
+                % (sub, rel(d)))
+            continue      # 한쪽이 없다고 다른 쪽까지 건너뛰지 않는다
+        # **하위 디렉토리까지 훑는다.** `os.listdir` 로 최상위만 보면 `commands/extra/deploy.md` 가
+        # 검사를 통과하고 신규 설치(`cp -R`)가 그대로 배포한다 (2회전 K2 가 실측으로 뚫었다).
+        for dp, dns, fns in os.walk(d):
+            dns[:] = [x for x in dns if x != ".git"]
+            for fn in sorted(fns):
+                p = os.path.join(dp, fn)
+                if not (os.path.isfile(p) and fn.endswith(".md")):
+                    continue
+                seen += 1
+                if not fn.startswith("mdm-"):
+                    bad("키트가 배포하는 %s 파일명이 `mdm-` 으로 시작하지 않는다: %s "
+                        "(0.7.0 이 예약한 이름 공간 밖이라 제품 저장소의 것과 부딪친다)" % (sub, rel(p)))
+                n = fm_name(p)
+                if n and not n.startswith("mdm-"):
+                    bad("키트 %s 의 name 이 `mdm-` 으로 시작하지 않는다: %s (%s)" % (sub, n, rel(p)))
+    if seen == 0:
+        bad("검사 11 이 키트 커맨드·에이전트를 한 건도 찾지 못했다 — 추출이 깨졌다 (통과로 위장하지 않는다)")
+
+
+for fn in (check_1c, check_5, check_6, check_7, check_8, check_9, check_10, check_11):
     fn()
 
 for m in problems:

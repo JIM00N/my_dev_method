@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# git pre-commit 훅 — 커밋될 트리가 /kit-review 통과 도장과 일치할 때만 커밋을 허용한다 (루트 CLAUDE.md 절대 규칙 1).
+# git pre-commit 훅 — 커밋될 트리가 /mdm-kit-review 통과 도장과 일치할 때만 커밋을 허용한다 (루트 CLAUDE.md 절대 규칙 1).
 #
 # git 이 커밋 시점에 직접 실행하므로, 명령 문자열을 정규식으로 잡던 이전 방식이 놓치던
 # 셸 우회(sh -c "git commit" · $(...) · 백틱 · 별칭/함수 · 줄이음)가 전부 무의미해진다 — git 은 어떻게 불렸든 커밋 전에 이 훅을 돈다.
@@ -8,7 +8,7 @@
 # 이 훅이 못 막는 경로(git 이 pre-commit 을 호출하지 않거나 훅을 끄는 표준 경로 — 전부 정책 위반으로 다룬다):
 #   - git commit --no-verify (-n) · git -c core.hooksPath=… commit : 훅 자체를 끈다
 #   - 병합 커밋 : pre-merge-commit 훅이 따로 막는다(git 2.24+)
-#   - cherry-pick · revert · rebase 재생 : git 이 차단형 pre-* 훅을 안 줘서 못 막는다(CLAUDE.md 한계·issues #028)
+#   - cherry-pick · revert · rebase 재생 · **git am** : git 이 차단형 pre-* 훅을 안 줘서 못 막는다(CLAUDE.md 한계·issues #028)
 #
 # 활성화: git config core.hooksPath .githooks  (클론마다 한 번. CLAUDE.md 참조)
 set -uo pipefail
@@ -36,8 +36,8 @@ if "$STAMP" --verify; then
   exit 0
 fi
 
-echo "커밋 차단: 커밋될 트리에 /kit-review 통과 도장이 없다." >&2
+echo "커밋 차단: 커밋될 트리에 /mdm-kit-review 통과 도장이 없다." >&2
 echo "  원인 셋 중 하나다 — 리뷰를 안 돌렸다 · 리뷰 이후 파일이 바뀌었다 · 리뷰된 변경을 스테이징하지 않았다." >&2
-echo "  해결: /kit-review 를 통과시키고 '.claude/scripts/review-stamp.sh --write' 로 도장을 찍은 뒤, 'git add -A' 하고 커밋한다." >&2
+echo "  해결: /mdm-kit-review 를 통과시키고 '.claude/scripts/review-stamp.sh --write' 로 도장을 찍은 뒤, 'git add -A' 하고 커밋한다." >&2
 echo "  훅을 우회하지 않는다(--no-verify 포함) — 막힌 이유를 해결하거나 사용자에게 보고한다." >&2
 exit 1

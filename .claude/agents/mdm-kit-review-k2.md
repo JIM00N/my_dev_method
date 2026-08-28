@@ -1,5 +1,5 @@
 ---
-name: kit-review-k2
+name: mdm-kit-review-k2
 description: K2 우회 재현. 훅·검사기를 읽는 게 아니라 임시 fixture 저장소에서 실제로 돌려서, 통과하면 안 되는 입력이 exit 0으로 통과하는 우회를 재현한다. 재현 커맨드가 증거다. 저장소 작업 트리는 건드리지 않는다.
 tools: Read, Grep, Glob, Bash, Write
 model: inherit

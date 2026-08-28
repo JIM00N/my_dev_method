@@ -10,9 +10,9 @@
 
 ## 절대 규칙
 
-1. **변경 후 커밋 전에 `/kit-review`를 돌린다.** 코드리뷰는 서브에이전트가 한다 —
+1. **변경 후 커밋 전에 `/mdm-kit-review`를 돌린다.** 코드리뷰는 서브에이전트가 한다 —
    Main이 직접 diff를 평가해 "통과"를 선언하지 않는다. 만든 컨텍스트는 자기 구멍을 보지 못한다.
-   축마다 서로 다른 에이전트를 쓴다 (`.claude/commands/kit-review.md`가 정본).
+   축마다 서로 다른 에이전트를 쓴다 (`.claude/commands/mdm-kit-review.md`가 정본).
    장치: **git 네이티브 pre-commit 훅**(`.githooks/pre-commit`)이 커밋될 트리가 통과 도장
    (`review-stamp.sh`, git write-tree)과 일치할 때만 커밋을 허용한다. git이 커밋 시점에 직접 돌리므로
    **명령 표기를 바꾸는 것으로는** 못 피하고(`sh -c`·서브셸·`$(...)`·백틱·함수·줄이음 6가지를
@@ -29,7 +29,7 @@
    ④ **에이전트 셸 한정 분기 자체가 우회구다** — `env -u CLAUDECODE -u AI_AGENT git commit`(또는 빈 문자열 대입)이면
    게이트가 꺼진다. 표식을 늘리면 사용자를 잘못 막을 위험이 커지므로 늘리지 않는다(#035).
    **요약: 이 게이트는 "잊고 커밋하는 것"을 막지, "작정하고 우회하는 것"은 못 막는다.**
-2. **리뷰 반복은 최대 3회전이다.** 회전 세는 법·초과 시 처리는 `.claude/commands/kit-review.md` 4번이 정본이다.
+2. **리뷰 반복은 최대 3회전이다.** 회전 세는 법·초과 시 처리는 `.claude/commands/mdm-kit-review.md` 4번이 정본이다.
    (2026-08-27 확정 — 사용자 결정)
 2-1. **커밋 정책: 승인 모드.** 리뷰를 통과시킨 뒤 **묻고 답을 받아야** 커밋한다. 물을 때 무엇이 바뀌었는지·
    리뷰 결과·남은 지적을 함께 준다. **모드와 무관하게 승인받는 것**은 여기서 세지 않는다 —
@@ -43,12 +43,12 @@
 4. **키트 동작이 바뀌면 워크플로 아티팩트 페이지도 갱신한다** (URL은 메모리 `workflow-artifact`).
 5. **작업 종료 시 `STATUS.md`를 갱신한다.**
 
-## 리뷰 축 (정본: `.claude/commands/kit-review.md`)
+## 리뷰 축 (정본: `.claude/commands/mdm-kit-review.md`)
 
 K1 약속–강제 대조 · K2 우회 재현(실행 기반) · K3 셸 정확성 · K4 수명주기 경로 ·
-K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `kit-refute`가 반증을 시도한 뒤에만 확정된다.
+K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `mdm-kit-refute`가 반증을 시도한 뒤에만 확정된다.
 **반증 경유에는 기계 장치가 없다** — 절차이고, 관측되는 흔적은 `issues.md` 회전 표의 반증 결과 칸뿐이다
-(`.claude/commands/kit-review.md` 3단계가 정본).
+(`.claude/commands/mdm-kit-review.md` 3단계가 정본).
 
 ## 이 저장소에서 밟은 셸 함정 (다시 밟지 않는다)
 
@@ -65,14 +65,21 @@ K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `kit-refute
 
 - `scripts/check-docs.sh` + `scripts/check-docs.py` — 경로·참조(키트 + **이 저장소 자신**) ·
   **절 이름 포인터** · **축↔에이전트 대응** · 쓰기 도구 에이전트의 임시 디렉토리 제한 ·
-  **셸 함정 lint** · 훅/스크립트 실행 권한 · 문법 · (로컬) `issues.md` 번호 유일성
+  **셸 함정 lint** · **키트 커맨드·에이전트의 `mdm-` 접두(검사 11)** · 훅/스크립트 실행 권한 · 문법 ·
+  (로컬) `issues.md` 번호 유일성
   (CI: `.github/workflows/docs-check.yml`)
-- `scripts/test-docs-check.sh` — **위 검사 자신의** 회귀 fixture (CI). 30 케이스.
-  덮는 것은 **검사 1-c·5·6·7·8·9·10** 다 — 검사 1·1-b·2·3·4 는 아직 RED 증거가 없다(이슈 #159).
+- `scripts/test-docs-check.sh` — **위 검사 자신의** 회귀 fixture (CI). 34 케이스.
+  덮는 것은 **검사 1-c·5·6·7·8·9·10·11** 다 — 검사 1·1-b·2·3·4 는 아직 RED 증거가 없다(이슈 #159).
   하필 검사 3(훅 실행 권한)은 스스로 «이 검사가 유일한 그물»이라 적은 자리다. **"각 분기"가 아니다.**
 - `scripts/test-review-gate.sh` — 커밋 게이트(pre-commit 훅·도장)의 우회 차단·시그널 정리 실측 (CI)
-- `scripts/test-consistency.sh` — 정합성 검사 회귀 fixture: H 마일스톤 배치 · 준비도 롤업 (CI)
+- `scripts/test-consistency.sh` — 정합성 검사 회귀 fixture: H 마일스톤 배치 · 준비도 롤업 · I 문서 등재 대조 (CI)
 - `scripts/test-report.sh` — `report.py` 회귀 fixture: Story 문서 ↔ 사이클 축약 슬롯 공존 모드 (CI)
+- `scripts/test-install-upgrade.sh` — `install-kit.sh` 회귀 fixture (CI). 13 케이스 + 뮤테이션 자기검증.
+  재는 것은 **불간섭**이다 — 설치기가 0.7.0 개명의 옛 이름을 **지우지도 옮기지도 않는가**(체크섬 대조,
+  몇 개를 쟀는지까지 단언) · 대신 알리고 손 절차(키트 README 4-1)로 안내하는가 · 신규 설치와
+  업그레이드가 **같은 약속**을 지키는가 · 카탈로그 행이 보존되는가 ·
+  업그레이드가 키트 소유 문서를 새 이름으로 갈아 주는가.
+  옛 이름 처리를 설치기가 자동으로 하던 두 판은 리뷰가 **치명**으로 잡아 사용자 결정으로 걷어냈다.
 - `.githooks/pre-commit`·`pre-merge-commit` — **에이전트 셸에서** 도장과 다른 트리의 커밋·병합 차단
   (절대 규칙 1의 장치, `core.hooksPath`로 활성. 사용자 커밋은 막지 않는다)
 

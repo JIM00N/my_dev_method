@@ -2,8 +2,8 @@
 
 Error Learning Agent가 새 에러 기록을 종합한 결과만 남긴다. 원본 이슈의 재현·수정 내역은 `docs/quality/issues.md`와 `docs/quality/archive/`가 소유한다.
 
-**읽는 시점**: `error-learning` 에이전트가 새 종합 전에 이전 종합과의 중복을 확인할 때, 그리고 Main이 인제스트 결과의 충돌을 검토할 때.
-**성장 규칙**: 200줄에 도달하면 오래된 종합부터 `docs/quality/archive/learning-log/`로 옮긴다 (폴더가 없으면 만든다). 실행 주체는 `/cycle-close` 7단계의 인제스트 검토다.
+**읽는 시점**: `mdm-error-learning` 에이전트가 새 종합 전에 이전 종합과의 중복을 확인할 때, 그리고 Main이 인제스트 결과의 충돌을 검토할 때.
+**성장 규칙**: 200줄에 도달하면 오래된 종합부터 `docs/quality/archive/learning-log/`로 옮긴다 (폴더가 없으면 만든다). 실행 주체는 `/mdm-cycle-close` 7단계의 인제스트 검토다.
 
 ## 기록 양식
 

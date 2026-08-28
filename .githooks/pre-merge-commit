@@ -18,7 +18,7 @@ fi
 if "$STAMP" --verify; then
   exit 0
 fi
-echo "커밋 차단: 병합 커밋의 트리에 /kit-review 통과 도장이 없다." >&2
-echo "  해결: /kit-review 통과 후 '.claude/scripts/review-stamp.sh --write' 로 도장을 찍고 병합한다." >&2
+echo "커밋 차단: 병합 커밋의 트리에 /mdm-kit-review 통과 도장이 없다." >&2
+echo "  해결: /mdm-kit-review 통과 후 '.claude/scripts/review-stamp.sh --write' 로 도장을 찍고 병합한다." >&2
 echo "  훅을 우회하지 않는다 — 막힌 이유를 해결하거나 사용자에게 보고한다." >&2
 exit 1

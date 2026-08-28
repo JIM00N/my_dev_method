@@ -128,20 +128,20 @@ expect_red "**대상 파일**을 해석한다 — 동명 헤딩에 가려지지 
 
 echo
 echo "검사 7 — 축 ↔ 에이전트"
-d=$(mkfx); rm -f "$d/.claude/agents/kit-review-k3.md"
-expect_red "표에 있는데 파일이 없으면 잡는다" "$d" "kit-review-k3"
+d=$(mkfx); rm -f "$d/.claude/agents/mdm-kit-review-k3.md"
+expect_red "표에 있는데 파일이 없으면 잡는다" "$d" "mdm-kit-review-k3"
 
-d=$(mkfx); sub "$d/.claude/commands/kit-review.md" \
-  '| K3 | `kit-review-k3` |' '| K3 | `kit-review-k9` |'
-expect_red "표와 파일이 어긋나면 잡는다" "$d" "kit-review"
+d=$(mkfx); sub "$d/.claude/commands/mdm-kit-review.md" \
+  '| K3 | `mdm-kit-review-k3` |' '| K3 | `mdm-kit-review-k9` |'
+expect_red "표와 파일이 어긋나면 잡는다" "$d" "mdm-kit-review-k9"
 
 d=$(mkfx)
-sub "$d/.claude/commands/kit-review.md" '| K2 | `kit-review-k2` |' '| K2 | `KREV-SWAP-A` |'
-sub "$d/.claude/commands/kit-review.md" '| K3 | `kit-review-k3` |' '| K3 | `kit-review-k2` |'
-sub "$d/.claude/commands/kit-review.md" '| K2 | `KREV-SWAP-A` |' '| K2 | `kit-review-k3` |'
+sub "$d/.claude/commands/mdm-kit-review.md" '| K2 | `mdm-kit-review-k2` |' '| K2 | `KREV-SWAP-A` |'
+sub "$d/.claude/commands/mdm-kit-review.md" '| K3 | `mdm-kit-review-k3` |' '| K3 | `mdm-kit-review-k2` |'
+sub "$d/.claude/commands/mdm-kit-review.md" '| K2 | `KREV-SWAP-A` |' '| K2 | `mdm-kit-review-k3` |'
 expect_red "**축 열을 뒤바꾼 오배선**을 잡는다 (#131)" "$d" "축"
 
-d=$(mkfx); sub "$d/.claude/agents/kit-review-k5.md" 'name: kit-review-k5' 'name: kit-review-k55'
+d=$(mkfx); sub "$d/.claude/agents/mdm-kit-review-k5.md" 'name: mdm-kit-review-k5' 'name: mdm-kit-review-k55'
 expect_red "파일명과 frontmatter name 불일치를 잡는다" "$d" "name"
 
 echo
@@ -178,14 +178,14 @@ expect_green "issues.md 가 없으면(CI 가 그렇다) 조용히 건너뛴다" 
 
 echo
 echo "검사 9 — Write 를 가진 에이전트의 임시 디렉토리 제한"
-d=$(mkfx); sub "$d/.claude/agents/kit-review-k2.md" 'mktemp -d' '임시 디렉토리' all
+d=$(mkfx); sub "$d/.claude/agents/mdm-kit-review-k2.md" 'mktemp -d' '임시 디렉토리' all
 expect_red "제한 문장이 사라지면 잡는다" "$d" "임시 디렉토리 제한"
 
 d=$(mkfx)
 python3 -c "
 import sys; p=sys.argv[1]; s=open(p,encoding='utf-8').read()
 open(p,'w',encoding='utf-8').write(s.replace('tools: Read, Grep, Glob, Bash, Write\n','',1).replace('mktemp -d','임시 디렉토리'))
-" "$d/.claude/agents/kit-review-k2.md"
+" "$d/.claude/agents/mdm-kit-review-k2.md"
 expect_red "**\`tools:\` 줄이 없어도** 대상이다 (도구 전체 상속 — #115①)" "$d" "임시 디렉토리 제한"
 
 d=$(mkfx)
@@ -193,7 +193,7 @@ python3 -c "
 import sys; p=sys.argv[1]; s=open(p,encoding='utf-8').read()
 s=s.replace('tools: Read, Grep, Glob, Bash, Write','tools:\n  - Read\n  - Bash\n  - Write',1)
 open(p,'w',encoding='utf-8').write(s.replace('mktemp -d','임시 디렉토리'))
-" "$d/.claude/agents/kit-review-k2.md"
+" "$d/.claude/agents/mdm-kit-review-k2.md"
 expect_red "**YAML 블록 리스트** 표기도 대상이다 (#115②)" "$d" "임시 디렉토리 제한"
 
 d=$(mkfx)
@@ -201,7 +201,7 @@ python3 -c "
 import sys; p=sys.argv[1]; s=open(p,encoding='utf-8').read()
 s=s.replace('Glob, Bash, Write','Glob, Bash, Edit',1)
 open(p,'w',encoding='utf-8').write(s.replace('mktemp -d','임시 디렉토리'))
-" "$d/.claude/agents/kit-review-k2.md"
+" "$d/.claude/agents/mdm-kit-review-k2.md"
 expect_red "**Edit** 도 쓰기 도구다 (#115③)" "$d" "임시 디렉토리 제한"
 
 d=$(mkfx); mkdir -p "$d/.claude/agents/extra"
@@ -223,6 +223,26 @@ expect_red "\$변수 뒤 멀티바이트를 잡는다 (#097 재발)" "$d" "멀�
 d=$(mkfx)
 python3 -c 'import sys; open(sys.argv[1],"w",encoding="utf-8").write("#!/usr/bin/env bash\nawk -v n=\"" + "".join(map(chr,[0xAC00,0xB098,0xB2E4])) + "\" \x27BEGIN{ if (n == \"" + "".join(map(chr,[0xB77C,0xB9C8,0xBC14])) + "\") print 1 }\x27\n")' "$d/scripts/probe-b.sh"
 expect_red "awk 한글 == 비교를 잡는다 (#098 재발)" "$d" "awk"
+
+echo
+echo "검사 11 — 키트 커맨드·에이전트의 mdm- 접두 (0.7.0 이 예약한 이름 공간)"
+d=$(mkfx)
+printf -- '---\ndescription: 접두 없는 커맨드\n---\n\n본문\n' \
+  > "$d/templates/dev-kit/.claude/commands/deploy.md"
+expect_red "접두 없는 커맨드가 들어오면 잡는다" "$d" "mdm-"
+
+d=$(mkfx)
+printf -- '---\nname: deployer\ndescription: d\ntools: Read\nmodel: inherit\n---\n\n본문\n' \
+  > "$d/templates/dev-kit/.claude/agents/mdm-deployer.md"
+expect_red "파일명은 맞는데 **name** 이 접두 없으면 잡는다" "$d" "name"
+
+d=$(mkfx); mkdir -p "$d/templates/dev-kit/.claude/commands/extra"
+printf -- '---\ndescription: 하위 디렉토리에 숨은 커맨드\n---\n\n본문\n' \
+  > "$d/templates/dev-kit/.claude/commands/extra/deploy.md"
+expect_red "**하위 디렉토리**에 넣어도 잡는다 (cp -R 이 그대로 배포한다)" "$d" "deploy.md"
+
+d=$(mkfx); rm -rf "$d/templates/dev-kit/.claude/commands"
+expect_red "키트 커맨드 디렉토리가 없으면 **조용히 꺼지지 않는다**" "$d" "그 몫을 못 본다"
 
 echo
 if [ "$fail" = 0 ]; then

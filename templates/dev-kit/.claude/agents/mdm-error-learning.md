@@ -1,5 +1,5 @@
 ---
-name: error-learning
+name: mdm-error-learning
 description: 새로 기록된 에러·검수 실패·운영 장애를 종합해 재발 방지 규칙과 검수 시나리오로 인제스트한다. issues.md에 "학습 인제스트: 대기"인 항목이 있을 때, 또는 사이클 종료 시 사용한다. 코드는 고치지 않는다.
 tools: Read, Grep, Glob, Edit, Write
 model: inherit

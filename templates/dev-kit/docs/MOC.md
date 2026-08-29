@@ -33,7 +33,8 @@
 - 실행 계획: `docs/plan/index.md` → roadmap → 활성 cycles → 필요하면 stories
 - 현재 상태: `docs/status/index.md` → STATUS → 필요한 archive
 - 품질·에러 학습: `docs/quality/index.md` → issues → error-learning-ingest guide → rules-learned → 자동 테스트 승격
-- 코드리뷰: `/mdm-review` → 1단계 정합성 검사 → 2단계 `mdm-code-review` 서브에이전트 → 발견을 issues에 기록 → 수정 → 재리뷰
+- 코드리뷰: `/mdm-review` → 1단계 정합성 검사 → 2단계 `mdm-code-review` 서브에이전트 → 발견을 issues에 기록
+  → 재현 테스트(RED) → 수정 (**1회전 — 재리뷰 없음**)
 - 큰 결정: `docs/decisions/index.md` → ADR
 - 기계적 강제: `.claude/README.md` → 훅·스크립트·커맨드·서브에이전트
 

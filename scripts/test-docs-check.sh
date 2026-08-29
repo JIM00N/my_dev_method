@@ -27,11 +27,20 @@ mkfx() { # 저장소 사본 하나를 만들고 경로를 낸다
   # 서브셸에서만 증가해 31 개 케이스가 `fx1` **한 디렉토리를 공유**했다. `tar -xf` 는 덮어쓰기만
   # 하고 삭제를 안 하므로 앞 케이스가 만든 파일이 뒤로 샜다 — 맨 앞의 green 케이스를 맨 뒤에
   # 그대로 붙이면 실패했다(2회전 K2·K3). 통과가 격리 덕이 아니라 **순서 덕**이었다.
+  #
+  # **로컬 전용 `issues.md` 는 사본에 넣지 않는다.** 넣으면 그 파일의 실제 상태가 fixture 를 오염시켜,
+  # 손대지 않은 green 케이스가 붉어진다 — 2026-08-28 에 실제로 그랬다(#320~#325 번호 중복).
+  # CI 에는 `issues.md` 가 없어 조용하고 **로컬에서만 붉어지는** 비대칭이 된다.
+  # 검사 8(번호 유일성)을 재는 케이스는 `synth_issues` 가 자기 것을 따로 깐다 (1회전 K6 보통 #361).
   local d
   d="$(mktemp -d "$TMP/fx.XXXXXX")" || return 1
   ( cd "$ROOT" && tar --exclude=./.git --exclude=./manyfast_reference \
                       --exclude=./docs/reports --exclude=./node_modules -cf - . ) \
     | ( cd "$d" && tar -xf - )
+  # **루트 `issues.md` 의 살아 있는 내용을 끊는다.** 뜨는 것은 그대로 두고 덮어쓴다 —
+  # `tar --exclude=./issues.md` 는 bsdtar 에서 키트 안 `docs/quality/issues.md` 까지 걸러
+  # 깨진 참조 15건을 만든다(실측). 파일 자체는 있어야 검사 1-c 가 통과한다.
+  printf '# 이슈 로그 (fixture 합성본)\n\n| # | 무엇 |\n|---|---|\n| #001 | 자리 |\n' > "$d/issues.md"
   git -C "$d" init -q
   git -C "$d" add -A >/dev/null 2>&1
   printf '%s' "$d"

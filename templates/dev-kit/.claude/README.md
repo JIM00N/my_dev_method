@@ -11,7 +11,7 @@
 | `hooks/status-updated.sh` | 작업 트리에 변경이 있는데 STATUS의 "최종 갱신"이 오늘이 아니면 **세션 종료를 막는다** | 절대 규칙 9 |
 | `hooks/guard-dependency.sh` | `stack.md` 결정 표의 "선택" 열에 없는 패키지의 설치·매니페스트 편집을 **막는다** | 절대 규칙 4 |
 | `hooks/guard-secrets.sh` | 비밀 파일·비밀값 형태 문자열의 `git commit`(`-a`·같은 명령의 `git add` 대상 포함)과 형상 관리 대상 파일 쓰기를 **막는다** | 절대 규칙 12 · S4 4부 |
-| `scripts/check-consistency.sh` | 문서 정합성 기계 검사 **9종(A~I)** — 상류 스냅샷 무결성·요구사항 커버리지·테스트 실재·상류 변경 재검토 잔존·고아 ID 인용·화면 정합·참조 깨짐·**마일스톤 배치**·**문서 등재 대조** | `docs/spec/source-map.md` |
+| `scripts/check-consistency.sh` | 문서 정합성 기계 검사 **10종(A~J)** — 상류 스냅샷 무결성·요구사항 커버리지·테스트 실재·상류 변경 재검토 잔존·고아 ID 인용·화면 정합·참조 깨짐·**마일스톤 배치**·**문서 등재 대조**·**계획 깊이**(J, `self:plan` 한정) | `docs/spec/source-map.md` · `docs/upstream/plan.md` |
 | `agents/mdm-code-review.md` | 변경분 리뷰 전용 서브에이전트 — 4축 17검사: 규칙 위반(우회·드리프트·스택) · 보안(신뢰 경계·주입·남의 것 접근·노출) · 의도치 않은 동작(되돌릴 수 없는 행동·중복 실행·실패 모드·경합·한도) · 검증 (코드는 못 고친다) | 절대 규칙 11 |
 | `agents/mdm-error-learning.md` | 에러 종합·인제스트 전용 서브에이전트 (코드는 못 고친다) | `docs/guides/error-learning-ingest.md` |
 | `commands/mdm-adopt.md` | `/mdm-adopt [--sync]` — 계획 문서 찾기·도입·재동기화 (**진입점**) | `docs/guides/S0-adopt.md` |

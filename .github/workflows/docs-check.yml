@@ -11,7 +11,7 @@ jobs:
         run: bash scripts/check-docs.sh
       - name: 리뷰 게이트 회귀 검사
         run: bash scripts/test-review-gate.sh
-      - name: 정합성 검사 회귀 검사 (H · 준비도 롤업 · I 등재 대조)
+      - name: 정합성 검사 회귀 검사 (H · 준비도 롤업 · I 등재 대조 · J 계획 깊이)
         run: bash scripts/test-consistency.sh
       - name: 리포트 회귀 검사
         run: bash scripts/test-report.sh

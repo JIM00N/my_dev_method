@@ -55,7 +55,8 @@ ADR은 `docs/decisions/index.md`의 목록 표에(행은 영구), Story는 `docs
 ### guides/ — 단계별 실행 지시서
 - `index.md` — 단계 목록·모드 전환·기본 프롬프트
 - `S0-adopt.md` — 도입 (계획 문서 찾기 · 교차 대조 · ID 정리 · 계약 확인)
-- `plan.md` — 계획이 없을 때 키트가 직접 만든다 (`/mdm-plan`)
+- `plan.md` — 계획이 없을 때 키트가 직접 만든다 (`/mdm-plan`) — **요구사항 → 기능 → 사양** 세 층 · 권한 표 ·
+  사양별 영향 영역·선행 (검사 J가 강제한다 — `self:plan` 한정)
 - `ready.md` — 준비도 점검: 답이 없는 칸을 구현 전에 찾고, **Story 크기를 판정한다** (`/mdm-ready`)
 - `S1-problem.md` — 문제·범위 정의
 - `S2-domain.md` — 도메인·데이터·상태 정의

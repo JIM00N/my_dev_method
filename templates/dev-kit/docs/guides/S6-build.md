@@ -104,7 +104,9 @@
 3-2를 위반한 코드도 위반한 컨텍스트 안에서는 자연스러워 보인다 — `mdm-error-learning`과 같은 분리 원리다.
 
 - 리뷰 기준: `docs/spec/code-conventions.md` 5-1 금지된 우회 · 스펙 드리프트 · `docs/spec/stack.md` 위반 · 권한 허용/거부 테스트 · 비밀값 · `docs/spec/source-map.md`의 요구사항 근거.
-- **치명·높음 발견은 `docs/quality/issues.md`에 기록하고, 수정 후 같은 범위로 재리뷰한다.** 재리뷰 없이 닫지 않는다.
+- **치명·높음 발견은 `docs/quality/issues.md`에 기록하고, 재현 테스트로 RED 를 확인한 뒤 고친다.**
+  **리뷰는 1회전이다** — 재리뷰를 돌리지 않는다. 고친 것의 증거는 그 테스트와 1단계 검사가 진다
+  (`.claude/commands/mdm-review.md` 3번).
 - 리뷰 시점: 구현 한 덩어리가 끝날 때마다, 그리고 사이클을 닫기 전(`/mdm-cycle-close`가 포함).
 - Main이 직접 리뷰하지 않는다. 사람은 리뷰 결과의 반영 판단만 한다 — 사람이 diff를 읽는 것은 선택이지 전제가 아니다.
 

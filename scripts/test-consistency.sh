@@ -23,8 +23,8 @@ make_fixture() {
   local rows="$1" d="$TMP/fx"
   rm -rf "$d"
   mkdir -p "$d/.claude/scripts" "$d/docs/spec" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/"
-  chmod +x "$d/.claude/scripts/check-consistency.sh"
+  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+  chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
 
   printf '# upstream\n' > "$d/docs/upstream/prd.md"
   # 스냅샷 무결성(검사 A)이 H 를 가리지 않도록 해시를 실제로 맞춰 둔다.
@@ -283,8 +283,8 @@ expect_signal "R9 개행 없는 마지막 줄의 유령 행을 잡는다" "$d" "
 # R10. [K6 보통] 도입 전 조기 종료 — fixture 가 없어 블록 제거 회귀를 못 잡던 것
 d="$TMP/fx"; rm -rf "$d"
 mkdir -p "$d/.claude/scripts" "$d/docs/spec"
-cp "$KIT/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/"
-chmod +x "$d/.claude/scripts/check-consistency.sh"
+cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
 add_registries "$d"
 printf '# C01\n' > "$d/docs/plan/cycles/C01-first.md"
 out="$(run "$d")"; rc=$?
@@ -382,8 +382,8 @@ make_plan() {
   local d="$TMP/fxj" h
   rm -rf "$d"
   mkdir -p "$d/.claude/scripts" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/"
-  chmod +x "$d/.claude/scripts/check-consistency.sh"
+  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+  chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
   printf '%s\n' "$1" > "$d/docs/upstream/plan.md"
   if command -v sha256sum >/dev/null 2>&1; then h=$(sha256sum "$d/docs/upstream/plan.md" | awk '{print $1}')
   else h=$(shasum -a 256 "$d/docs/upstream/plan.md" | awk '{print $1}'); fi
@@ -1219,6 +1219,111 @@ d=$(make_plan "$J_OK
 2026-01-01 최초 작성.")
 expect_fail "J33 「요구사항」이 든 다른 절 제목은 실제로 붉어진다 (가이드가 적은 대가)" "$d" "요구사항(###)이 없다"
 
+# J39. [#370 — 파이썬 이식이 닫았다] **빈 ATX 제목(`##` 만 있는 줄)이 그 뒤 행의 칸 검사 셋을
+#      무음으로 빠뜨리던 것.** 셸 판은 스트림을 탭으로 이어 붙였다 다시 갈랐는데, 제목이 비면
+#      필드가 접혀 `jlv` 가 빈 문자열이 되고 `[: : integer expression expected` 와 함께
+#      그 행이 통째로 밀렸다. 구판 실측: 영향 영역·선행·먼저 **셋 다 무음**.
+d=$(make_plan "# 데모 — 계획
+
+$J_PERM
+
+## 4. 요구사항 → 기능 → 사양
+
+### FR-1: 파일 가져오기
+
+#### FR-1-F1: 파일 선택
+
+##
+
+| 사양 | 트리거 | 동작 | 결과 | 영향 영역 | 선행 | 먼저 |
+|---|---|---|---|---|---|---|
+| FR-1-F1-S1 | 누름 | 연다 | 열림 |  |  |  |")
+expect_fail "J39 빈 ATX 제목 뒤의 행도 칸 검사를 받는다 (영향 영역)" "$d" "영향 영역이 비었다"
+expect_signal "J39-b 같은 행의 선행도 잡는다" "$d" "선행 칸이 비었다"
+expect_signal "J39-c 같은 행의 '먼저'도 잡는다" "$d" "'먼저' 칸이 비었다"
+expect_no_signal "J39-d 셸 오류 문구가 새어 나오지 않는다" "$d" "integer expression"
+
+# J40. [#369 — 파이썬 이식이 닫았다] **권한 표 셀 안의 리터럴 탭이 거짓 실패를 만들던 것.**
+#      셸 판은 스캔 결과를 탭으로 이어 붙여 `cut -f5,6` 으로 다시 갈랐다 — 셀 안 탭에서 행이 잘려
+#      「'거부되면' 칸이 비었다」를 **채워진 표에** 냈다 (구판 실측). 사양 표 경로는 마지막 변수가
+#      나머지를 먹어 통과했다 — **두 경로가 갈렸다.** 이제 이어 붙이지 않는다.
+d=$(make_plan "# 데모 — 계획
+
+## 2. 사용자와 권한
+
+| 역할 | 할 수 있는 것 | 할 수 없는 것 | 거부되면 |
+|---|---|---|---|
+| 관리자 | 전부	빠짐없이 | — | 숨김 |
+
+$J_SPEC")
+expect_no_signal "J40 권한 표 셀 안 탭이 거짓 실패를 만들지 않는다" "$d" "'거부되면' 칸이 비었다"
+expect_signal "J40-b 그 계획은 통과한다" "$d" "정합성 검사 통과"
+
+# ── 0.8.0 이식분 — 검사 J 의 본체가 check-plan.py(파이썬)로 옮겨졌다 ─────────
+# 새로 생긴 것은 **호출 경계**다: 본체가 없거나·못 돌거나·이상하게 끝나면 어떻게 되나.
+# 「조용히 안 도는 검사는 없는 검사다」를 그 경계마다 못박는다 (루트 CLAUDE.md 절대 규칙 3).
+
+# J34. 본체 파일이 없으면 **건너뛰지 않고 실패한다**
+d=$(make_plan "$J_OK"); rm -f "$d/.claude/scripts/check-plan.py"
+expect_fail "J34 check-plan.py 가 없으면 fail-closed 다" "$d" "check-plan.py 가 없다"
+
+# J35. python3 가 없으면 **건너뛰지 않고 실패한다** — 이 판이 python3 를 필수 의존으로 올렸다.
+#      PATH 에서 python3 만 뺀 채로 돌린다 (다른 명령은 심볼릭 링크로 그대로 준다).
+d=$(make_plan "$J_OK")
+nopy="$TMP/nopy"; rm -rf "$nopy"; mkdir -p "$nopy"
+for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf mktemp rm sha256sum shasum find dirname basename; do
+  p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nopy/$c"
+done
+out="$( cd "$d" && PATH="$nopy" "$(command -v bash)" .claude/scripts/check-consistency.sh 2>&1 )"; rc=$?
+case "$out" in
+  *"python3 가 없어 계획 깊이 검사(J)를 돌릴 수 없다"*)
+    if [ "$rc" = 1 ]; then ok "J35 python3 가 없으면 fail-closed 다 (건너뛰지 않는다)"
+    else ng "J35 — 신호는 났으나 rc=$rc 다 (1 이어야 한다)"; fi ;;
+  *) ng "J35 — python3 없는 PATH 에서 fail-closed 신호가 없다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
+esac
+
+# J35-b. `mktemp` 가 없어도 같다 — 상태를 받을 통로가 없으면 **모른다고 말하지 않고 실패한다**.
+#        (호출 경계가 새로 만든 의존이라, 그 의존이 빠졌을 때를 함께 못박는다)
+d=$(make_plan "$J_OK")
+nomk="$TMP/nomk"; rm -rf "$nomk"; mkdir -p "$nomk"
+for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf rm sha256sum shasum find dirname basename python3; do
+  p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nomk/$c"
+done
+out="$( cd "$d" && PATH="$nomk" "$(command -v bash)" .claude/scripts/check-consistency.sh 2>&1 )"; rc=$?
+case "$out" in
+  *"임시 파일을 만들지 못해"*)
+    if [ "$rc" = 1 ]; then ok "J35-b mktemp 가 없으면 fail-closed 다"
+    else ng "J35-b — 신호는 났으나 rc=$rc 다 (1 이어야 한다)"; fi ;;
+  *) ng "J35-b — mktemp 없는 PATH 에서 fail-closed 신호가 없다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
+esac
+
+# J36. 본체가 **이상한 종료코드**로 끝나면 실패로 다룬다 — 모르는 상태를 통과로 세지 않는다
+d=$(make_plan "$J_OK")
+printf '#!/usr/bin/env python3\nimport sys\nsys.exit(3)\n' > "$d/.claude/scripts/check-plan.py"
+expect_fail "J36 본체가 rc=3 으로 끝나면 실패로 다룬다" "$d" "비정상 종료했다 (rc=3)"
+
+# J37. 본체가 **상태를 안 남기면** 실패한다 — J_RAN 을 0 으로 둔 채 넘어가면 꼬리말이
+#      「self:plan 계획 문서도 없다」고 거짓을 말한다 (#303·#359 가 그 거짓의 자리다)
+d=$(make_plan "$J_OK")
+printf '#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n' > "$d/.claude/scripts/check-plan.py"
+expect_fail "J37 상태를 하나도 안 남기면 실패한다 (빈 상태 파일)" "$d" "상태 파일이 형식을 벗어났다"
+
+# J37-b. 열쇠가 **하나만** 있는 경우도 같다 — 「둘 다 읽었는가」로 판정한다
+d=$(make_plan "$J_OK")
+printf '#!/usr/bin/env python3\nimport sys\nopen(sys.argv[2],"w").write("ran=1\\n")\nsys.exit(0)\n' > "$d/.claude/scripts/check-plan.py"
+expect_fail "J37-b 상태 파일이 형식을 벗어나면 실패한다" "$d" "상태 파일이 형식을 벗어났다"
+
+# J38. 본체의 **경고(rc=2)**가 셸 쪽 경고로 이어진다 — 실패로 올리지도, 삼키지도 않는다.
+#      J30-b 는 메시지만 봤다. 등급 매핑(0·1·2)은 이 판에서 새로 생긴 경계다.
+d=$(make_plan "$J_OK"); printf '# 수집 기록\n' > "$(mf)"
+out="$(run "$d")"; rc=$?
+case "$out" in
+  *"정합성 검사 통과 (경고 있음)"*)
+    if [ "$rc" = 0 ]; then ok "J38 본체의 경고가 셸의 경고 등급으로 이어진다 (rc=0)"
+    else ng "J38 — 경고인데 rc=$rc 다 (0 이어야 한다)"; fi ;;
+  *) ng "J38 — 경고 등급이 이어지지 않는다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
+esac
+
 # 뮤테이션 자기검증 — 검사기에서 H 블록을 들어내면 위 fixture 들이 반드시 깨져야 한다.
 echo
 echo "뮤테이션 자기검증"
@@ -1291,7 +1396,7 @@ case "$out" in
      printf '%s\n' "$out" | sed 's/^/        /' ;;
 esac
 
-# J 블록도 같은 방식으로 못박는다 — 들어내면 정상 fixture 의 위반이 조용해져야 한다.
+# J 호출 블록도 같은 방식으로 못박는다 — 들어내면 정상 fixture 의 위반이 조용해져야 한다.
 d=$(make_plan "${J_OK/| 파일 모듈 |/| — |}")
 python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
 import sys
@@ -1302,8 +1407,41 @@ open(p, 'w', encoding='utf-8').write(s[:i] + s[j:])
 PY
 out="$(run "$d")"
 case "$out" in
-  *"영향 영역이 비었다"*) ng "J 를 들어냈는데도 신호가 났다 — fixture 가 검사기를 실측하지 않는다" ;;
-  *) ok "J 를 들어내면 신호가 사라진다 (fixture 가 진짜로 J 를 재고 있다)" ;;
+  *"영향 영역이 비었다"*) ng "J 호출을 들어냈는데도 신호가 났다 — fixture 가 검사기를 실측하지 않는다" ;;
+  *) ok "J 호출을 들어내면 신호가 사라진다 (fixture 가 진짜로 J 를 재고 있다)" ;;
+esac
+
+# **본체(check-plan.py)에도 직접 뮤테이션을 가한다.** 호출 블록만 재면 「J 를 셸에서 부른다」까지만
+# 증명되고, 정작 판정을 하는 파일은 무검증으로 남는다 — 0.8.0 이식이 새로 만든 자리다.
+# J-1 의 칸 검사(영향 영역·선행·먼저)를 들어내면 J1-b·J2 계열이 조용해져야 한다.
+d=$(make_plan "${J_OK/| 파일 모듈 |/| — |}")
+python3 - "$d/.claude/scripts/check-plan.py" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+i = s.index('        sid = cell(jrow, idx["사양"])')
+j = s.index('    close_feat()\n    close_req()\n    close_sec()', i)
+assert i < j
+open(p, 'w', encoding='utf-8').write(s[:i] + s[j:])
+PY
+out="$(run "$d")"
+case "$out" in
+  *"영향 영역이 비었다"*) ng "check-plan.py 의 칸 검사를 들어냈는데도 신호가 났다 — fixture 가 본체를 실측하지 않는다" ;;
+  *) ok "check-plan.py 의 칸 검사를 들어내면 신호가 사라진다 (fixture 가 본체를 재고 있다)" ;;
+esac
+
+# J-2(권한 표)도 따로 못박는다 — J-1 과 다른 함수이고 백스톱도 따로다.
+d=$(make_plan "${J_OK/| 자기 것 조회 | 남의 것 조회 | 숨김 |/| 자기 것 조회 | 남의 것 조회 |  |}")
+python3 - "$d/.claude/scripts/check-plan.py" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+old = "        if not pcell(rrow, ri_deny):"
+assert s.count(old) == 1
+open(p, 'w', encoding='utf-8').write(s.replace(old, "        if False:", 1))
+PY
+out="$(run "$d")"
+case "$out" in
+  *"'거부되면' 칸이 비었다"*) ng "check-plan.py 의 권한 칸 검사를 들어냈는데도 신호가 났다 — fixture 가 본체를 실측하지 않는다" ;;
+  *) ok "check-plan.py 의 권한 칸 검사를 들어내면 신호가 사라진다 (J11 이 본체를 재고 있다)" ;;
 esac
 
 # 도입 전 조기 종료가 J 의 실패를 삼키지 않는지 — **조기 종료 두 자리 각각에 실제로 뮤테이션을 가한다.**

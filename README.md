@@ -48,8 +48,18 @@
 | 필수 | **Claude Code** | 훅·커맨드·서브에이전트가 동작하지 않습니다. Codex 등 다른 에이전트는 `AGENTS.md`로 같은 규칙을 읽지만 **기계적 강제는 없습니다** |
 | 필수 | **git 저장소** | 비밀값·STATUS 훅이 git을 근거로 판단하므로 검사를 건너뜁니다 |
 | 권장 | **jq** (`brew install jq`) | guard 훅 2개가 경고만 남기고 통과합니다 (차단하지 않음) |
-| 권장 | **python3** | HTML 리포트(`report.py`)를 못 만듭니다. **강제 장치는 전부 순수 bash라 그대로 동작합니다** |
+| 필수 | **python3 (3.7+)** | **정합성 검사 J(계획 깊이)가 실패합니다 — 건너뛰지 않습니다.** 검사 J의 본체가 `.claude/scripts/check-plan.py`이기 때문입니다. HTML 리포트(`report.py`)도 못 만듭니다 |
+| 필수 | **mktemp** | 정합성 검사가 검사 J의 상태를 받을 통로를 못 만들어 실패합니다 |
 | 선택 | **계획 도구의 MCP** (있다면) | `/mdm-adopt`가 자동 수집·`--sync` diff를 못 합니다. 파일 경로나 붙여넣기로 대신할 수 있고, 계획이 아예 없으면 `/mdm-plan`이 만듭니다 |
+
+> **이 표의 정본은 `templates/dev-kit/README.md`의 「필요한 것」 절입니다** — 배포본과 함께 나가는 쪽이
+> 정본이고, 여기는 설치 전에 보라고 옮겨 적은 것입니다. 두 곳이 어긋나면 배포본 쪽이 맞습니다.
+>
+> **0.8.0에서 python3가 「권장」에서 「필수」로 바뀌었습니다.** 그전에 이 표는
+> *"강제 장치는 전부 순수 bash라 그대로 동작합니다"*라고 적었고 `report.py`도 같은 약속을 했는데,
+> 검사 J의 파서를 파이썬으로 옮기면서 **그 약속을 철회했습니다.** python3가 없으면
+> `check-consistency.sh`가 검사 J를 조용히 건너뛰지 않고 **실패시킵니다** — 조용히 안 도는 검사는
+> 없는 검사이기 때문입니다. **3.7+**인 이유는 문법이 아니라 로케일 처리입니다(PEP 538·540이 3.7 도입).
 
 정합성 검사(`.claude/scripts/check-consistency.sh`)는 **MCP를 부르지 않습니다** — 저장소 안 스냅샷만 봅니다.
 그래서 상류가 죽어도, CI에서도 그대로 돕니다.
@@ -136,7 +146,7 @@ AGENTS.md              Codex 등 호환용 진입점
 .claude/
   settings.json        훅 등록
   hooks/               guard-secrets · guard-dependency · status-updated
-  scripts/             check-consistency.sh (정합성 기계 검사) · report.py (HTML 리포트)
+  scripts/             check-consistency.sh (정합성 기계 검사 A~I) · check-plan.py (검사 J 본체) · report.py (HTML 리포트)
   agents/              mdm-code-review · mdm-error-learning (구현과 분리된 리뷰·학습 컨텍스트)
   commands/            /mdm-adopt · /mdm-plan · /mdm-ready · /mdm-stage · /mdm-review · /mdm-cycle-close · /mdm-ingest-errors
 docs/                  문서 골격 (내용은 프로젝트가 채운다)

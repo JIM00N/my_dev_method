@@ -10,8 +10,12 @@
 
 산출: docs/reports/<종류>-<날짜>.html  (형상 관리에서 제외한다)
 
-정합성을 *강제*하는 것은 check-consistency.sh(순수 bash)이고, 이 파일은 *보여주기*만 한다.
-그래서 python3 가 없어도 키트의 강제 장치는 그대로 돈다.
+정합성을 *강제*하는 것은 check-consistency.sh 이고, 이 파일은 *보여주기*만 한다.
+
+**한때 여기에 «그래서 python3 가 없어도 키트의 강제 장치는 그대로 돈다» 고 적혀 있었다.
+0.8.0 에서 철회했다** — 정합성 검사 J 의 본체가 check-plan.py(파이썬)로 옮겨져,
+python3 는 이제 키트 강제 장치의 **필수 의존**이다. check-consistency.sh 는 python3 가 없으면
+J 를 건너뛰지 않고 실패시킨다. 키트 README 「필요한 것」이 정본이다.
 """
 import html
 import os

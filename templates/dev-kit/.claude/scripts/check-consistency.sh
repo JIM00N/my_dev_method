@@ -12,6 +12,7 @@
 #   H. 마일스톤 배치       모든 요구사항이 마일스톤에 배치됐는가 · 마일스톤 크기 신호 (경고)
 #   I. 문서 등재 대조       사이클·ADR 은 문서↔행 양방향 · Story 는 활성 행 유무·잔존 행만 (문서 없는 행은 안 잡는다)
 #   J. 계획 깊이            self:plan 계획 문서가 기능·사양까지 내려가고 사양마다 영향 영역·선행·먼저를 갖는가 + 권한 표
+#                          (본체는 .claude/scripts/check-plan.py — 마크다운 파싱이라 파이썬이 맡는다. python3 필수)
 #
 # 정본: docs/spec/source-map.md (요구사항·화면 매핑표)
 # 실행: /mdm-plan 끝(도입 전 — J 만) · /mdm-review 1단계 · 사이클 시작 · /mdm-cycle-close · CI
@@ -88,25 +89,6 @@ cell() {
   trim "${parts[$((idx - 1))]:-}"
 }
 
-# 칸이 **양식 플레이스홀더**인가 — 통째로 <…> 이고 안에 '>' 가 없을 때만 그렇다.
-# plan_scan 의 양식 행 판정(앵커 칸)과 **같은 규칙**을 칸 단위로 쓴다. 규칙을 갈라 두면 한쪽만 고쳐진다.
-# 이것이 없으면 골격에서 **앵커 칸만 실값으로** 바꾼 계획이 J 를 통째로 빠져나간다 —
-# 「채워져 있다 (검사 J)」가 빈 칸 셋만 보던 자리다 (2회전 K1 높음 #342, 반증 확정).
-# 골격이 배포하는 `<✅ / —>` 가 `*✅*` 에 매치돼 **가장 엄한 하위 검사를 켜 놓고**,
-# 같은 골격의 `<무엇이 시작시키나>` 가 그것을 통과시켰다.
-is_ph() {
-  case "$1" in
-    '<'*'>') case "${1%>}" in *'>'*) return 1 ;; *) return 0 ;; esac ;;
-  esac
-  return 1
-}
-# 칸 값을 읽되 **양식 플레이스홀더는 빈 칸으로 본다.**
-pcell() {
-  local v
-  v=$(cell "$1" "$2")
-  if is_ph "$v"; then printf ''; else printf '%s' "$v"; fi
-}
-
 # 쉼표로 나열된 항목 개수. 빈 칸과 '—' 는 0.
 # (bash 3.2 는 set -u 에서 빈 배열 확장이 죽는다 — 빈 입력을 먼저 돌려보내고 확장도 가드한다.
 #  가드가 없으면 $() 서브셸만 조용히 죽어 "완료인데 테스트 없음" 검사가 통과해 버린다)
@@ -145,322 +127,53 @@ finish() {
 }
 
 # ── J. 계획 깊이 (self:plan 계획 문서) ───────────────────────────────────
-# 계획이 요구사항에서 멈추면 "어떻게 동작하는가"가 전부 구현 시점으로 미뤄지고,
-# 답이 없는 칸은 에이전트가 그 자리에서 지어낸다. 그래서 키트가 만든 계획은
-# 기능 → 사양까지 내려가고, 사양마다 영향 영역·선행·먼저를 갖는다.
-# 정본: docs/guides/plan.md 「4절 사양 표를 채우는 법」·「정본이 두 벌 되지 않는 이유」.
+# 검사 본체는 **`.claude/scripts/check-plan.py`** 다. 이 자리는 그것을 부르고 결과를 흘려보낸다.
 #
-# **출처가 self:plan 인 문서만 본다.** 외부 상류의 스냅샷은 읽기 전용이고 형식이 그쪽 것이라,
-# 형식을 강제하면 외부 도구를 쓰는 프로젝트가 첫 검사에서 막힌다 —
-# 그쪽은 docs/spec/source-map.md 4절 계약 확인표가 판정으로 다룬다.
+# **왜 파이썬으로 옮겼나** — J 의 입력은 사람이 자유롭게 쓰는 마크다운이고, 그 입력 공간은
+# 무한 꼬리를 갖는다(CR · 탭 · NBSP · HTML 주석 · 펜스 3종 · escape 파이프 · setext · IFS 접힘).
+# 셸로 파싱하던 판에서 같은 결함 계열이 표 리더 다섯 개에서 반복해 확정됐다 —
+# table_of(#269) · reg_table · data_rows(#267) · plan_rows(#279) · plan_scan(#357·#358).
+# 회전을 더 돌려서 닫히는 종류가 아니라고 판단해 파서를 파이썬으로 옮겼다
+# (0.8.0, 사용자 결정 — handoff 0-1절 갈래 A). A~I 는 그대로 셸이다.
 #
-# **도입(/mdm-adopt) 전에도 돈다.** 계획을 만든 직후가 깊이를 고칠 수 있는 유일한 시점이고,
-# 그때는 매핑표가 아직 없어 아래 A~I 는 쉰다.
-
-# 계획 문서를 한 번 훑어 **소제목과 표 데이터 행을 한 스트림**으로 낸다.
-# 한 줄 = 여섯 칸(탭 구분): 종류 ⇥ ##절 ⇥ 깊이 ⇥ 제목 ⇥ 머리행 ⇥ 데이터행
-#   H … 소제목 (머리행·데이터행은 빈 칸)
-#   R … 앵커 열 둘($2·$3)을 **함께** 가진 표의 데이터 행
-#
-# **앵커 열을 둘 요구한다.** 하나만 보면 계획의 다른 표(낱말 정의·색인)가 걸려 정상 문서가
-# 붉어진다 (1회전 K1 #293). 절 번호로 찾지 않는 것은 그대로다 — 골격의 절 번호가 바뀌어도 안 깨지고,
-# 앵커 열을 바꾸면 표를 못 찾아 「한 건도 못 찾았다」로 붉어진다 (fail-closed).
-#
-# **표 안 빈 줄에서 절단하지 않는다** (1회전 K2 치명 #279). 이 저장소는 같은 결함을 이미 두 번
-# 확정했다 — table_of(2회전 #269)·reg_table(1회전). 절단이 무음이면 그 아래 행 **전부**가
-# 조용히 빠져 「가장 빈 행」이 검사에서 사라진다. table_of 가 빈 줄을 next 로 넘기는 것과 같게 맞춘다.
-#
-# 걸러내는 것: 코드펜스(``` **와 ~~~ 둘 다** — 1회전 K2 높음 #281) · 4칸 들여쓴 코드블록 ·
-# 구분줄 · 양식 행(**앵커 칸**이 통째 <…>). 후행 개행 없는 마지막 줄도 읽는다.
-plan_scan() { # $1=파일 $2=앵커 열 A $3=앵커 열 B
-  local f="$1" a1="$2" a2="$3" line raw sec="(문서 머리)" lv=0 title="(문서 머리)"
-  local hdr="" fence="" cmt="" pre rest h n bare fc ai
-  [ -f "$f" ] || return 0
-  while IFS= read -r raw || [ -n "$raw" ]; do
-    raw="${raw%$'\r'}"                  # CRLF 줄끝 (1회전 K2·K3 독립 #357)
-    line="${raw#"${raw%%[![:space:]]*}"}"
-    # 코드펜스 — 연 문자와 같은 문자로만 닫힌다
-    if [ -n "$fence" ]; then
-      case "$line" in
-        '```'*) [ "$fence" = 'b' ] && fence="" ;;
-        '~~~'*) [ "$fence" = 't' ] && fence="" ;;
-      esac
-      continue
-    fi
-    case "$line" in
-      '```'*) fence='b'; continue ;;
-      '~~~'*) fence='t'; continue ;;
-    esac
-    # HTML 주석은 **렌더되지 않는다** — 펜스·4칸 코드블록과 같은 부류다 (1회전 K2 높음 #358, 반증 확정).
-    # 안 거르면 주석 안 유령 행이 n_spec·close_feat·n_role 을 채워, #320·#327 두 강등이 근거로 삼은
-    # 백스톱을 전부 무력화한다. 반대 방향으로는 주석 안 초안 표가 정상 계획을 붉힌다.
-    # 한 줄 주석과 줄 중간에서 닫히는 주석도 처리한다 — 닫힌 뒤 남은 글자로 이어서 판정한다.
-    while : ; do
-      if [ -n "$cmt" ]; then                        # 주석 안에서 줄이 시작한다
-        case "$line" in
-          *'-->'*) line="${line#*-->}"; cmt="" ;;   # 여기서 닫힌다 — 뒤를 이어서 본다
-          *)       line=""; break ;;                # 줄 전체가 주석 안
-        esac
-      else
-        case "$line" in
-          *'<!--'*)
-            pre="${line%%<!--*}"; rest="${line#*<!--}"
-            case "$rest" in
-              *'-->'*) line="${pre}${rest#*-->}" ;; # 한 줄에서 열고 닫는다
-              *)       line="$pre"; cmt=1 ;;        # 열린 채로 줄이 끝난다
-            esac ;;
-          *) break ;;
-        esac
-      fi
-    done
-    line="${line#"${line%%[![:space:]]*}"}"
-    [ -n "$line" ] || continue
-    # 앞공백 4칸(또는 탭)부터는 GFM 코드블록이다 — 표·제목은 3칸까지만 렌더된다
-    case "$raw" in '    '*|'	'*) continue ;; esac
-    case "$line" in
-      '#'*)
-        h="$line"; n=0
-        while [ "${h#\#}" != "$h" ]; do h="${h#\#}"; n=$((n + 1)); done
-        # '#' 7개 이상은 GFM 이 제목으로 렌더하지 않는다. '#' 뒤 공백도 요구한다
-        if [ "$n" -le 6 ]; then
-          case "$h" in
-            ' '*|'')
-              lv="$n"; title=$(trim "$h"); title="${title//	/ }"
-              [ "$n" -le 2 ] && sec="$title"
-              hdr=""
-              printf 'H\t%s\t%s\t%s\t\t\n' "$sec" "$lv" "$title"
-              continue ;;
-          esac
-        fi
-        ;;
-    esac
-    [ -n "$line" ] || continue          # 표 안 빈 줄은 절단이 아니다 (#279)
-    case "$line" in
-      '|'*) ;;
-      *) hdr=""; continue ;;            # 산문에서 표가 끝난다
-    esac
-    # escape 파이프는 셀 구분자가 아니다 — 열이 밀리면 빈 칸이 면제되거나 엉뚱한 칸을 읽는다 (#294)
-    line="${line//\\|/\&#124;}"
-    # 구분줄(|---|:--:|)만 뺀다. '-' 가 없으면 구분줄일 수 없다 —
-    # 전부 빈 칸인 행까지 빼면 검사가 잡으려는 「가장 빈 행」이 유일하게 빠져나간다 (#285)
-    # 필터를 `data_rows`(`grep -vE '^\|[[:space:]:|-]+$'`)와 **같은 강도**로 맞춘다.
-    # 리터럴 `[|: -]` 는 CR·탭을 안 먹어, 구분줄 끝에 **보이지 않는 문자 하나**만 붙으면
-    # 구분줄이 데이터 행으로 세어졌다 — 그 행의 칸이 전부 `---` 이라 칸 검사를 다 통과하고
-    # `n_spec`·`feat_spec`·`n_role` 백스톱 셋을 동시에 무력화했다 (1회전 K2·K3 독립 #357).
-    # `*-*` 가드는 그대로 둔다 — 없으면 전부 빈 칸인 행까지 빠져나간다 (#285).
-    # **NBSP(U+00A0)는 여전히 못 먹는다** — `data_rows` 도 같고, 열린 이슈 #272·#264 의 자리다.
-    case "$line" in
-      *-*) bare="${line//[[:space:]:|-]/}"; [ -n "$bare" ] || continue ;;
-    esac
-    if [ -z "$hdr" ] || [ -n "$(col_idx "$line" "$a1")" ]; then
-      # 머리행 — 앵커 둘을 함께 가져야 이 표를 본다
-      if [ -n "$(col_idx "$line" "$a1")" ] && [ -n "$(col_idx "$line" "$a2")" ]; then
-        hdr="${line//	/ }"
-      else
-        [ -z "$hdr" ] && continue
-      fi
-      continue
-    fi
-    ai=$(col_idx "$hdr" "$a1")
-    fc=$(cell "$line" "$ai")            # 양식 행 판정은 **앵커 칸** 기준이다 (#280)
-    case "$fc" in
-      '<'*'>') case "${fc%>}" in *'>'*) ;; *) continue ;; esac ;;
-    esac
-    printf 'R\t%s\t%s\t%s\t%s\t%s\n' "$sec" "$lv" "$title" "$hdr" "$line"
-  done < "$f"
-}
-
-# 수집 기록에서 self:plan 문서를 고른다.
-# **형식 이탈을 조용히 넘기지 않는다** (1회전 K2·K3 높음 #282) — 탭이 공백이 되거나 후행 개행이
-# 없으면 J 가 통째로 꺼졌고, 그런데도 「J 만 돌았다」를 출력해 **거짓 통과 주장**이 됐다.
-# `|| [ -n "$mline" ]` 가 후행 개행 없는 마지막 줄을 살린다 (plan_scan 과 같은 가드).
-TAB=$(printf '\t')
-J_TARGETS=""
+# **python3 는 필수다 — 없으면 건너뛰지 않고 실패한다.** 조용히 안 도는 검사는 없는 검사다.
+# 이 결정으로 python3 가 키트 강제 장치의 **필수 의존**이 됐다 (그전에는 report.py 의 열람용
+# 선택 의존이었다). 키트 README 「필요한 것」이 그 사실을 명시한다.
 J_RAN=0
-J_PLAN_ROW=0   # docs/upstream/plan.md 가 수집 기록에 **행으로라도** 있는가 (출처는 무엇이든)
-if [ -f "$MANIFEST" ]; then
-  while IFS= read -r mline || [ -n "$mline" ]; do
-    case "$mline" in '#'*|'') continue ;; esac
-    # **탭 개수를 센다.** `case ... in *"$TAB"*` 는 「탭 **1개 이상**」이라 4열 가드가 아니었다 —
-    # 첫 구분자만 탭이면 jsrc 가 통째로 잘못 잡혀 J 가 조용히 꺼지고 「상류가 외부 도구다」 + rc=0 이
-    # 된다 (2회전 K2·K3·K4 3축 독립 #324 — #282 가 닫았다고 한 것의 잔여).
-    ntab=0; mrest="$mline"
-    while [ "${mrest#*"$TAB"}" != "$mrest" ]; do mrest="${mrest#*"$TAB"}"; ntab=$((ntab + 1)); done
-    if [ "$ntab" != 3 ]; then
-      bad "docs/upstream/manifest.tsv — 탭 4열이 아닌 줄이 있다 (탭 ${ntab}개 — 4열이면 3개다): '$mline' → 파일<TAB>출처<TAB>수집시각<TAB>sha256 으로 고친다. 형식이 어긋나면 검사 A·J 가 그 줄을 못 보고 조용히 통과한다"
-      continue
-    fi
-    # **`IFS="$TAB" read` 를 쓰지 않는다.** TAB 은 IFS **공백류**라 연속 구분자를 접고 선행 구분자를
-    # 버린다 — 그래서 1열·2열이 비면 필드가 밀려 jsrc 가 수집시각이 되고, J 가 조용히 꺼진 채
-    # 「상류가 외부 도구다」 + rc=0 이 됐다. #324 가 「닫힘」이라 적은 문구가 글자 그대로 살아 있었다.
-    # (1회전 K3 높음 #360, 반증 확정 — bash 3.2·sh·dash·ksh·zsh 전부 동일하게 접힌다)
-    # 탭 개수는 위에서 이미 3으로 확인했으므로 `%%`/`#` 로 정확히 넷으로 가른다.
-    jf="${mline%%"$TAB"*}";      jrest="${mline#*"$TAB"}"
-    jsrc="${jrest%%"$TAB"*}";    jrest="${jrest#*"$TAB"}"
-    jat="${jrest%%"$TAB"*}";     jsha="${jrest#*"$TAB"}"
-    jf=$(trim "$jf"); jsrc=$(trim "$jsrc"); jat=$(trim "$jat"); jsha=$(trim "$jsha")
-    if [ -z "$jf" ] || [ -z "$jsrc" ] || [ -z "$jat" ] || [ -z "$jsha" ]; then
-      bad "docs/upstream/manifest.tsv — 네 칸 중 빈 칸이 있다: '$mline' → 파일<TAB>출처<TAB>수집시각<TAB>sha256 을 모두 채운다. 빈 칸을 넘기면 출처를 잘못 읽어 검사 J 가 조용히 꺼진다"
-      continue
-    fi
-    [ "$jf" = "plan.md" ] && J_PLAN_ROW=1
-    [ "$jsrc" = "self:plan" ] || continue
-    if [ ! -f "$UPSTREAM/$jf" ]; then
-      # 검사 A 는 「도입 전」 조기 종료 뒤에 있어 이 창에서는 안 돈다 — J 가 직접 알린다 (#286)
-      bad "docs/upstream/$jf — 수집 기록에 있는데 파일이 없다 → /mdm-plan 을 다시 돌리거나 manifest.tsv 의 줄을 지운다"
-      continue
-    fi
-    J_TARGETS="${J_TARGETS}${jf}
-"
-  done < "$MANIFEST"
-fi
-
-# J 가 쉬는 이유를 **아는 만큼만** 말한다. 옛 판은 무조건 「상류가 외부 도구다」라고 했는데,
-# 그 말은 수집 기록이 없거나 self:plan 행만 빠졌을 때 **거짓**이다 — 배포본 키트가 정확히 그 상태였다
-# (docs/upstream/plan.md 가 물리적으로 있는데 「self:plan 계획 문서도 없다」고 말했다).
-# 키트 양식 자신이 *"외부에서 계획을 받아 온 프로젝트라면 이 파일은 지운다 (manifest.tsv 에서도 뺀다)"*
-# 라고 그 상태를 금한다. (1회전 K2 높음 #359, 반증 확정 — #282·#286 의 마지막 잔여)
-if [ -z "$J_TARGETS" ]; then
-  if [ ! -f "$MANIFEST" ] && ls "$UPSTREAM"/*.md >/dev/null 2>&1; then
-    # 검사 A 가 같은 것을 보지만 「도입 전」 조기 종료 뒤라 이 창에서는 안 돈다 — J 가 직접 알린다 (#286 과 같은 처방)
-    bad "상류 스냅샷은 있는데 수집 기록이 없다: docs/upstream/manifest.tsv — /mdm-plan 또는 /mdm-adopt 로 다시 수집한다. 기록이 없으면 검사 J 가 계획 깊이를 볼 수 없다"
-  elif [ -f "$UPSTREAM/plan.md" ] && [ "$J_PLAN_ROW" = 0 ]; then
-    caution "docs/upstream/plan.md 가 있는데 수집 기록에 self:plan 으로 기록되지 않았다 — 계획 깊이 검사(J)가 쉰다. /mdm-plan 을 돌려 기록하거나, 상류가 외부 도구라면 그 파일을 지운다 (docs/upstream/plan.md 양식 마지막 줄이 그렇게 지시한다)."
-  else
-    note "계획 깊이 검사(J)를 건너뛴다 — 출처가 self:plan 인 계획 문서를 수집 기록에서 찾지 못했다 (상류가 외부 도구다)."
-  fi
+J_PLAN_ROW=0
+J_PY="$ROOT/.claude/scripts/check-plan.py"
+J_STATE=""
+if [ ! -f "$J_PY" ]; then
+  bad ".claude/scripts/check-plan.py 가 없다 — 계획 깊이 검사(J)를 돌릴 수 없다. 키트를 다시 설치하거나 scripts/install-kit.sh 로 업그레이드한다"
+elif ! command -v python3 >/dev/null 2>&1; then
+  bad "python3 가 없어 계획 깊이 검사(J)를 돌릴 수 없다 — 키트는 python3 를 요구한다 (README 「필요한 것」). 건너뛰지 않고 실패한다: 조용히 안 도는 검사는 없는 검사다"
 else
-  J_RAN=1
-  while IFS= read -r jf; do
-    [ -n "$jf" ] || continue
-    jp="$UPSTREAM/$jf"
-
-    # J-1. 사양 표 — 계층이 끝까지 내려갔고, 행마다 영향 영역·선행·먼저가 채워졌는가
-    jscan=$(plan_scan "$jp" "사양" "영향 영역")
-
-    # 어느 '##' 절이 요구사항 절인가 — **절 제목에 「요구사항」이 들어간 절**이다.
-    #
-    # 옛 판은 「사양 행이 **발견된** 절」로 잡았고, 그것이 순환이었다 (2회전 K2·K1 #320):
-    # 사양 표가 아예 없는 절 = 계획이 요구사항에서 멈춘 **바로 그 절** = 전칭 검사가 잡으려는 대상이
-    # 구조적으로 사정권 밖이 된다. 요구사항을 두 절로 나누고 둘째가 산문뿐이면 도입 전·후 모두 rc=0 이었다.
-    # 절 **번호**는 여전히 못 박지 않는다 — 골격의 번호가 바뀌어도 안 깨진다. 대신 낱말 하나를 요구하고,
-    # 그 요구를 docs/guides/plan.md P3 4절이 명시한다 (약속과 장치를 같이 둔다).
-    # 대가는 「요구사항」이 든 다른 절 제목(부록·이력)이 계층으로 읽히는 것이라, 가이드가 그것을 금한다.
-    n_spec=0; l_hdr=""; ok_cols=0
-    js=""; ja=""; jpre=""; jfst=""; jtr=""; jac=""; jrs=""
-    cur_req=""; req_feat=0; cur_feat=""; feat_spec=0
-    in_req_sec=0; cur_sec=""; sec_req=0; n_req_sec=0
-    # 요구사항·기능이 닫힐 때 「아래가 비었나」를 판정한다 — 전칭 주장의 구현이다 (#283).
-    # 옛 J 는 파일 전체에 사양 행이 하나만 있어도 통과했는데 DoD 는 「모든 요구사항이 기능으로,
-    # 모든 기능이 사양으로」를 (검사 J)로 귀속하고 있었다.
-    close_feat() {
-      [ -n "$cur_feat" ] || return 0
-      [ "$feat_spec" -gt 0 ] || \
-        bad "docs/upstream/$jf 「${cur_feat}」 — 이 기능에 사양 표가 없다. 기능에서 멈추면 «어떻게 동작하는가»가 구현 시점으로 미뤄져 그 자리에서 지어내진다 → 사양 표를 만든다 (docs/guides/plan.md P3 4절)"
-      cur_feat=""; feat_spec=0
-    }
-    close_req() {
-      [ -n "$cur_req" ] || return 0
-      [ "$req_feat" -gt 0 ] || \
-        bad "docs/upstream/$jf 「${cur_req}」 — 이 요구사항에 기능(####)이 없다. 요구사항에서 멈춘 것이다 → 요구사항(###) → 기능(####) → 사양(표) 세 층으로 나눈다 (docs/guides/plan.md P3 4절)"
-      cur_req=""; req_feat=0
-    }
-    close_sec() {
-      [ "$in_req_sec" = 1 ] || return 0
-      [ "$sec_req" -gt 0 ] || \
-        bad "docs/upstream/$jf 「${cur_sec}」 — 이 요구사항 절에 요구사항(###)이 없다. 절 제목만 세우고 산문으로 끝난 것이다 → 요구사항(###) → 기능(####) → 사양(표) 세 층으로 나눈다 (docs/guides/plan.md P3 4절)"
-      in_req_sec=0; cur_sec=""; sec_req=0
-    }
-
-    while IFS="$TAB" read -r jk jsec jlv jtitle jhdr jrow; do
-      # 빈 스캔에서 printf 가 내는 **빈 줄 하나**를 사양 행으로 세지 않는다 — 옛 판은 그것이
-      # n_spec=1 이 되어 「추출 0 건을 통과로 세지 않는다」가 **정확히 0 건일 때만** 안 떴다 (2회전 K3 #321).
-      case "$jk" in H|R) ;; *) continue ;; esac
-      if [ "$jk" = H ]; then
-        if [ "$jlv" -le 2 ]; then
-          close_feat; close_req; close_sec
-          case "$jtitle" in
-            *요구사항*) in_req_sec=1; cur_sec="$jtitle"; sec_req=0; n_req_sec=$((n_req_sec + 1)) ;;
-          esac
-        elif [ "$in_req_sec" = 1 ] && [ "$jlv" = 3 ]; then
-          close_feat; close_req
-          cur_req="$jtitle"; req_feat=0; sec_req=$((sec_req + 1))
-        elif [ "$in_req_sec" = 1 ]; then
-          close_feat
-          cur_feat="$jtitle"; feat_spec=0; req_feat=$((req_feat + 1))
-        fi
-        continue
-      fi
-
-      if [ "$jhdr" != "$l_hdr" ]; then
-        l_hdr="$jhdr"; ok_cols=1
-        js=$(col_idx "$jhdr" "사양");     ja=$(col_idx "$jhdr" "영향 영역")
-        jpre=$(col_idx "$jhdr" "선행");   jfst=$(col_idx "$jhdr" "먼저")
-        jtr=$(col_idx "$jhdr" "트리거");  jac=$(col_idx "$jhdr" "동작")
-        jrs=$(col_idx "$jhdr" "결과")
-        for want in "선행:$jpre" "먼저:$jfst" "트리거:$jtr" "동작:$jac" "결과:$jrs"; do
-          if [ -z "${want#*:}" ]; then
-            ok_cols=0
-            bad "docs/upstream/$jf 「${jtitle}」 — 사양 표에 '${want%%:*}' 열이 없다 → docs/guides/plan.md P3 4절의 열 이름을 그대로 쓴다"
-          fi
-        done
-      fi
-      n_spec=$((n_spec + 1)); feat_spec=$((feat_spec + 1))
-      if [ -z "$cur_feat" ] && [ "$in_req_sec" = 1 ]; then
-        bad "docs/upstream/$jf 「${jtitle}」 — 사양 표가 기능 소제목(####) 아래에 있지 않다. 요구사항 바로 밑에 두면 기능 층이 없는 것이다 → 요구사항(###) → 기능(####) → 사양(표) 세 층으로 나눈다 (docs/guides/plan.md P3 4절)"
-        cur_feat="(소제목 없는 표)"
-      fi
-      [ "$ok_cols" = 1 ] || continue
-
-      sid=$(cell "$jrow" "$js"); [ -n "$sid" ] || sid="(ID 없는 사양 행)"
-      case "$(pcell "$jrow" "$ja")" in
-        ''|'—'|'-') bad "docs/upstream/$jf $sid — 영향 영역이 비었다. 손댈 모듈·경계를 모르면 무엇을 병렬로 돌릴 수 있는지 계산할 수 없다 → 영역을 적는다 (아무것도 안 건드리는 사양은 없으므로 '—' 는 답이 아니다)" ;;
+  J_STATE=$(mktemp 2>/dev/null) || J_STATE=""
+  if [ -z "$J_STATE" ]; then
+    bad "임시 파일을 만들지 못해 계획 깊이 검사(J)의 상태를 받을 수 없다 (mktemp 실패)"
+  else
+    trap 'rm -f "$J_STATE"' EXIT
+    python3 "$J_PY" --state "$J_STATE"
+    J_RC=$?
+    case "$J_RC" in
+      0) ;;
+      1) fail=1 ;;
+      2) warn=1 ;;
+      *) bad "계획 깊이 검사(J)가 비정상 종료했다 (rc=$J_RC) — .claude/scripts/check-plan.py 를 직접 돌려 원인을 본다" ;;
+    esac
+    # 상태를 못 읽으면 **모른다고 말하지 않고 실패한다.** J_RAN 을 0 으로 둔 채 넘어가면 꼬리말이
+    # 「self:plan 계획 문서도 없다」고 거짓을 말한다 — 옛 판이 정확히 그렇게 틀렸다 (#303·#359).
+    # 파일 존재는 따로 안 본다. mktemp 가 이미 만들어 둬서 「없음」은 도달 불가 분기가 되고,
+    # 못 잡히는 분기를 남기느니 **열쇠 둘을 실제로 읽었는가** 하나로 판정한다 (빈 파일도 여기서 걸린다).
+    J_STATE_OK=0
+    while IFS='=' read -r jkey jval; do
+      case "$jkey" in
+        ran) J_RAN="$jval"; J_STATE_OK=$((J_STATE_OK + 1)) ;;
+        plan_row) J_PLAN_ROW="$jval"; J_STATE_OK=$((J_STATE_OK + 1)) ;;
       esac
-      [ -n "$(pcell "$jrow" "$jpre")" ] || \
-        bad "docs/upstream/$jf $sid — 선행 칸이 비었다. 선행이 없으면 '—' 라고 적는다 — 빈 칸은 '선행 없음' 과 '아직 안 봤다' 를 구분하지 못한다"
-      fst=$(pcell "$jrow" "$jfst")
-      [ -n "$fst" ] || \
-        bad "docs/upstream/$jf $sid — '먼저' 칸이 비었다. 먼저 만들 묶음이면 ✅, 아니면 '—' → docs/guides/plan.md P3 4절"
-      case "$fst" in
-        *✅*)
-          for want in "트리거:$jtr" "동작:$jac" "결과:$jrs"; do
-            case "$(pcell "$jrow" "${want#*:}")" in
-              ''|'—'|'-') bad "docs/upstream/$jf $sid — 먼저 만들 묶음인데 '${want%%:*}' 가 비었다. 첫 묶음은 계획 단계에서 동작까지 정한다 (나머지 묶음은 /mdm-ready 가 그때 채운다) → docs/guides/plan.md P3 4절" ;;
-            esac
-          done ;;
-      esac
-    done < <(printf '%s\n' "$jscan")
-    close_feat; close_req; close_sec
-    # 요구사항 절을 하나도 못 찾으면 **조용히 건너뛰지 않는다.** 옛 판은 in_req_sec 이 jlv<=2 H 행
-    # 없이는 절대 안 켜져서, setext 제목(===/---)이나 최상위가 ### 인 계획에서 전칭 셋이 통째로
-    # 무음이었다 (2회전 K3 #322). 못 찾은 것 자체가 신호다 — fail-closed.
-    [ "$n_req_sec" -gt 0 ] || \
-      bad "docs/upstream/$jf — 요구사항 절을 찾지 못했다. 검사 J 는 제목에 「요구사항」이 든 '##' 절 안에서 요구사항(###) → 기능(####) → 사양(표) 계층을 센다 → 그 절을 '##' 로 세우고 제목에 「요구사항」을 넣는다 (setext 제목 ===/--- 은 읽지 않는다. docs/guides/plan.md P3 4절)"
-    [ "$n_spec" -gt 0 ] || \
-      bad "docs/upstream/$jf — 사양 행을 한 건도 찾지 못했다. 계획이 요구사항에서 멈췄거나 사양 표가 양식 그대로다 → 기능(####)과 사양 표를 채운다 (docs/guides/plan.md P3 4절). 추출 0 건을 통과로 세지 않는다"
-
-    # J-2. 권한 표 — 누가 무엇을 할 수 있나는 요구사항 그 자체다 (docs/guides/plan.md P3 2절)
-    n_role=0; r_hdr=""; r_ok=0; ri_role=""; ri_deny=""
-    while IFS="$TAB" read -r rhdr rrow; do
-      if [ "$rhdr" != "$r_hdr" ]; then
-        r_hdr="$rhdr"; r_ok=1
-        ri_role=$(col_idx "$rhdr" "역할")
-        ri_deny=$(col_idx "$rhdr" "거부되면")
-        for want in "할 수 있는 것:$(col_idx "$rhdr" "할 수 있는 것")"; do
-          if [ -z "${want#*:}" ]; then
-            r_ok=0
-            bad "docs/upstream/$jf — 권한 표에 '${want%%:*}' 열이 없다 → docs/guides/plan.md P3 2절의 열 이름을 그대로 쓴다"
-          fi
-        done
-      fi
-      n_role=$((n_role + 1))
-      [ "$r_ok" = 1 ] || continue
-      [ -n "$(pcell "$rrow" "$ri_deny")" ] || \
-        bad "docs/upstream/$jf 권한 '$(cell "$rrow" "$ri_role")' — '거부되면' 칸이 비었다. 거부 경로가 없는 권한은 화면마다 다르게 구현된다 → 숨김·안내·오류 중 하나를 적거나, 거부가 없으면 '—'"
-    done < <(plan_scan "$jp" "역할" "거부되면" | grep "^R$TAB" | cut -f5,6)
-    [ "$n_role" -gt 0 ] || \
-      bad "docs/upstream/$jf — 역할 × 권한 표를 찾지 못했다. 누가 무엇을 할 수 있나는 요구사항 그 자체이고, 늦게 정하면 화면·데이터를 다시 짜게 된다 → 계획 2절에 표를 만든다. 역할이 없는 프로젝트도 그 사실을 한 줄로 적는다 (docs/guides/plan.md P3 2절)"
-  done < <(printf '%s' "$J_TARGETS")
+    done < "$J_STATE"
+    [ "$J_STATE_OK" = 2 ] || bad "계획 깊이 검사(J)의 상태 파일이 형식을 벗어났다 (ran·plan_row 둘을 못 읽었다) — .claude/scripts/check-plan.py 를 직접 돌려 원인을 본다"
+  fi
 fi
 
 # 도입 전이면 나머지 검사는 대조할 것이 없다 — 실패시키지 않되, 상태를 분명히 알린다.

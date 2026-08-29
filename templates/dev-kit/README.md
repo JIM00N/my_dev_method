@@ -10,6 +10,25 @@ AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **
 **어떤 계획 도구도 전제하지 않는다** — `/mdm-adopt`가 저장소 안을 먼저 뒤지고, 없으면 밖에 있는지 묻고,
 그래도 없으면 `/mdm-plan`이 직접 만든다. 진입점은 `/mdm-adopt` 하나다.
 
+## 필요한 것 ★
+
+| 무엇 | 왜 | 없으면 |
+|---|---|---|
+| `bash` | 훅·정합성 검사 A~I | 강제 장치가 안 돈다 |
+| **`python3` (3.7+)** | **정합성 검사 J**(`.claude/scripts/check-plan.py`) · 리포트(`report.py`) | **검사 J 가 실패한다 — 건너뛰지 않는다** |
+| **`mktemp`** | 검사 J 의 상태를 셸이 받아 오는 통로 | 정합성 검사가 실패한다 |
+| `git` | 훅·형상 관리 | 커밋 계열 장치가 안 돈다 |
+
+> **python3 는 0.8.0 부터 선택이 아니라 필수다.** 그전에는 `report.py`(열람용)만 썼고
+> *"python3 가 없어도 키트의 강제 장치는 그대로 돈다"* 고 적혀 있었다. 검사 J 의 입력이
+> 사람이 자유롭게 쓰는 마크다운이라 셸 파싱으로는 같은 결함 계열이 반복해 재발했고
+> (표 리더 다섯 개에서 확정), 그 파서를 파이썬으로 옮기면서 이 약속을 **철회했다.**
+> `check-consistency.sh` 는 python3 가 없으면 J 를 **건너뛰지 않고 실패**시킨다 —
+> 조용히 안 도는 검사는 없는 검사다.
+>
+> **왜 3.7+ 인가** — 문법 때문이 아니다(이 스크립트는 f-string 도 안 쓴다). `LC_ALL` 이 없거나 `C` 인
+> 컨테이너·cron 환경에서 한글 출력이 살아남는 근거가 **PEP 538·540 이고 둘 다 3.7 도입**이다.
+
 ## 파일 소유권 — 설치·업그레이드의 기준 ★
 
 | 구분 | 파일 | 업그레이드 시 |
@@ -58,7 +77,8 @@ cp -R /경로/my_dev_method/templates/dev-kit/.claude .
 ```bash
 cp -R /경로/dev-kit/.claude/hooks /경로/dev-kit/.claude/scripts \
       /경로/dev-kit/.claude/commands /경로/dev-kit/.claude/agents .claude/
-# scripts/ 를 빠뜨리면 check-consistency.sh·report.py 가 영영 옛 판에 머문다
+# scripts/ 를 빠뜨리면 check-consistency.sh·check-plan.py·report.py 가 영영 옛 판에 머문다
+# (check-plan.py 가 없으면 정합성 검사 J 가 건너뛰어지지 않고 **실패**한다)
 # settings.json은 기존 파일에 dev-kit의 hooks 항목을 손으로 병합한다 (jq 또는 편집기)
 ```
 

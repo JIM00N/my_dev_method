@@ -61,11 +61,31 @@ $(diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | sed 's/^/      /')"
   fi
 }
 
+# 0.8.0 신규 파일(검사 J 의 본체)이 그 저장소에 원본과 같게·755 로 도착했는가.
+# 이것이 없으면 그 저장소는 검사 J 가 **건너뛰어지지 않고 실패**한다 (fail-closed).
+assert_delivers() { # $1 라벨  $2 저장소 경로
+  local what="$1" where="$2"
+  if [ ! -f "$where/.claude/scripts/check-plan.py" ]; then
+    ng "$what — check-plan.py 를 주지 않았다. 그 저장소는 검사 J 가 통째로 실패한다"
+    return
+  fi
+  cmp -s "$KIT/.claude/scripts/check-plan.py" "$where/.claude/scripts/check-plan.py" \
+    && ok "$what — check-plan.py 를 원본과 같게 준다 (검사 J 의 본체)" \
+    || ng "$what — check-plan.py 를 줬으나 원본과 다르다"
+  [ -x "$where/.claude/scripts/check-plan.py" ] \
+    && ok "$what — check-plan.py 가 755 로 도착한다" \
+    || ng "$what — check-plan.py 가 755 로 도착하지 않았다"
+}
+
 # 0.6.0 배포본 합성: 파일명 + **본문의 커맨드·에이전트 이름**까지 옛 것으로 되돌린다.
 make_old_install() { # $1 = 이름
   local d="$TMP/$1" rel
   rm -rf "$d"; mkdir -p "$d"
   cp -R "$KIT/.claude" "$d/.claude"
+  # 0.8.0 신규 파일은 **실제 0.6.0/0.7.0 배포본에 없다.** `cp -R` 이 내용도 755 도 그대로 옮기므로,
+  # 빼지 않으면 업그레이드가 「준다」를 원리적으로 못 잰다 — 설치기가 그 파일을 아예 배달하지 않게
+  # 고쳐도 단언이 초록이었다(1회전 K4·K6 2축 독립 #375). 이 파일 머리말이 스스로 경고한 실패형이다.
+  rm -f "$d/.claude/scripts/check-plan.py"
   cp -R "$KIT/docs" "$d/docs"
   cp "$KIT/CLAUDE.md" "$d/CLAUDE.md"
   cp "$KIT/AGENTS.md" "$d/AGENTS.md"
@@ -194,11 +214,19 @@ grep -q '앞으로도 건드리지 않는다' "$TMP/out3" \
   && ok "신규 설치도 같은 약속을 인쇄한다 (다음 업그레이드가 그 말을 지킨다)" \
   || ng "신규 설치 안내가 지키지 못할 약속을 하거나 아무 말도 하지 않았다"
 
+# **업그레이드 전에** 신규 설치의 배달을 잰다 — 뒤로 미루면 업그레이드가 결손을 메꾼다 (#375).
+assert_delivers "신규 설치" "$d3"
+
 # 그 상태에서 이어서 업그레이드해도 그대로여야 한다 — 두 경로가 같은 약속을 지키는지.
 up "$d3"
 grep -q OWN "$d3/.claude/commands/review.md" 2>/dev/null \
   && ok "**설치가 남긴 남의 파일이 다음 업그레이드에서도 그대로다**" \
   || ng "설치가 「앞으로도 안 건드린다」고 한 파일을 다음 업그레이드가 건드렸다"
+
+# ── 5. 0.8.0 신규 파일 전달 — **업그레이드 경로** ─────────────────────
+# 신규 설치 경로는 4절에서 **업그레이드 전에** 이미 쟀다 (여기서 재면 업그레이드가 결손을 메꿔
+# 라벨과 실제로 측정되는 것이 어긋난다 — 1회전 K6 #375).
+assert_delivers "업그레이드" "$d"
 
 # ── 뮤테이션 자기검증 ────────────────────────────────────────────────
 # 파괴적 이관을 되살리면 불간섭 케이스가 **반드시** 붉어져야 한다.

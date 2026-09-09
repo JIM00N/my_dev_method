@@ -77,7 +77,7 @@ merge_claude() {
   local d f rel
   for d in hooks scripts commands agents; do
     for f in "$SRC/.claude/$d"/*; do
-      [ -e "$f" ] || continue
+      [ -f "$f" ] || continue
       rel=".claude/$d/$(basename "$f")"
       copy_file "$rel"
     done
@@ -190,6 +190,9 @@ copy_if_absent() { # $1 = kit 기준 상대 경로. 이미 있으면 손대지 �
   cp "$SRC/$rel" "$to"; note "생성: $rel (양식 — 이후 프로젝트가 소유한다)"
 }
 
+# Engine dependencies are required for both new installs and upgrades.
+command -v python3 >/dev/null 2>&1 || die "python3 가 필요하다 (계약·계획 검사)"
+
 if [ "$MODE" = "install" ]; then
   # ---------- 신규 설치 ----------
   for e in CLAUDE.md docs; do
@@ -267,6 +270,9 @@ else
 NEXT
 fi
 
+copy_if_absent ".github/workflows/mdm-check.yml"
+note "진단: python3 .claude/scripts/mdm-ops.py doctor (원격 CI 활성화는 별도 조회)"
+
 # settings.json 병합이 안 된 채 끝나면 훅 전부가 죽어 있는데, 커맨드·가이드는 멀쩡히 돌아서
 # 문제가 조용하다 — 산문 규칙만 남은 방법론이 된다. 그래서 마지막에 크게 알린다.
 # (이번 실행이 만든 것이든 지난 설치가 남긴 것이든, .dev-kit 파일이 남아 있는 한 같은 상태다)
@@ -280,3 +286,11 @@ if [ -e "$TARGET/.claude/settings.json.dev-kit" ]; then
   커맨드·가이드는 정상 동작하므로 이 상태는 조용히 지나간다 — 지금 병합해라. 확인: /hooks
 WARN
 fi
+
+cat <<'EVIDENCE'
+계약 근거 검사로 전환:
+  docs/guides/contract-evidence.md를 읽고 mdm-contract.py adopt를 실행한다.
+  기존 준비·완료 표시는 새 증거로 자동 승계되지 않는다.
+  도입 전 계획 작성만 check-consistency.sh --init을 사용한다 (운영 통과 아님).
+  docs/meta/와 docs/evidence/는 프로젝트 소유이며 업그레이드가 덮어쓰지 않는다.
+EVIDENCE

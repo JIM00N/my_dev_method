@@ -1,0 +1,17 @@
+{
+  "kind": "actual",
+  "project": "",
+  "change": "",
+  "evidence": [],
+  "contradictions_before": null,
+  "drift_after": null,
+  "rework_minutes": null,
+  "questions": null,
+  "necessary_questions": null,
+  "documents_read": null,
+  "review_candidates": null,
+  "affected_candidates": null,
+  "false_alarms": null,
+  "check_seconds": null,
+  "handoff_errors": null
+}

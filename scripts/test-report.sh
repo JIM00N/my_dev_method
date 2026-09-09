@@ -29,7 +29,7 @@ make_fixture() {
   rm -rf "$d"
   mkdir -p "$d/.claude/scripts" "$d/docs/plan/stories" "$d/docs/plan/cycles" \
            "$d/docs/spec" "$d/docs/guides" "$d/docs/status"
-  cp "$KIT/.claude/scripts/report.py" "$d/.claude/scripts/"
+  cp "$KIT/.claude/scripts/report.py" "$KIT/.claude/scripts/mdm_model.py" "$d/.claude/scripts/"
 
   printf '# fixture 프로젝트\n' > "$d/CLAUDE.md"
 

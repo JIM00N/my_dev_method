@@ -12,6 +12,7 @@
 ## 0. 세션 시작 시 (예외 없음)
 
 1. `docs/status/STATUS.md`를 읽는다 — 지금 어느 단계이고, 프로파일이 무엇이고, 무엇이 열려 있는지.
+   도입 후에는 `mdm-ops.py handoff-check`로 현재 내용과 이전 인계의 일치도 확인한다.
 2. STATUS가 가리키는 **현재 단계 가이드 1개**를 읽는다 (`docs/guides/S<n>-*.md`).
 3. 그 가이드가 "입력"으로 지정한 문서만 추가로 읽는다.
 
@@ -44,7 +45,7 @@
 | 새 에러 기록을 종합·학습할 때                                                    | —                                                                                  | `/mdm-ingest-errors` 실행 (`mdm-error-learning` 서브에이전트에 위임 — Main이 직접 쓰지 않는다)    |
 | 검수를 시작할 때                                                            | `docs/quality/test-scenarios.md`                                                   | `docs/quality/issues.md`                                               |
 | 검수가 버그를 잡았을 때                                                        | `docs/guides/S6-build.md` 5-4                                                      | 그 시나리오의 자동 테스트                                                         |
-| 같은 유형 문제가 2번째일 때                                                     | `docs/quality/issues.md`                                                           | `/mdm-ingest-errors` 실행 (규칙 승격은 `mdm-error-learning`이 한다)                      |
+| 같은 원인·조건 문제가 반복될 때                                                     | `docs/quality/issues.md`                                                           | `/mdm-ingest-errors` 실행 (규칙 승격은 `mdm-error-learning`이 한다)                      |
 | 되돌리기 어려운 선택을 할 때                                                     | `docs/decisions/index.md`                                                          | `docs/decisions/ADR-<nnn>-*.md`                                        |
 | 사이클을 닫을 때                                                            | `docs/guides/S6-build.md` 8절                                                       | `/mdm-cycle-close` 실행 결과 · `docs/status/STATUS.md`                         |
 | 작업을 끝낼 때 (매번)                                                        | —                                                                                  | `docs/status/STATUS.md`                                                |
@@ -66,6 +67,7 @@
 7. **한 번에 끝까지 만들지 않는다.** 사이클(MVP) 단위로 자른다 — 구축 → 검수 → 안정화 → 배포 → 다음 사이클.
 8. **과설계를 잘라낸다.** 스스로 제안한 것이 요구사항보다 크면 축소안을 함께 제시한다.
 9. **작업 종료 시 `docs/status/STATUS.md`를 갱신한다.** 갱신하지 않은 채 세션을 끝내지 않는다. 해결된 항목을 STATUS에 누적하지 말고 유형별 archive로 옮긴다.
+   도입 후에는 `docs/guides/operating-loop.md`의 handoff로 이번 변경을 연결하고 mdm-check.sh로 최종 검사한다.
 10. **모르면 묻는다.** 추측으로 스펙을 채우지 말고 사용자에게 인터뷰로 확인한다.
 11. **초록불을 만들기 위해 검증을 약화시키지 않는다.** ★
   금지 목록의 정본은 `docs/spec/code-conventions.md` 5-1 표다 — 테스트 삭제·skip, 단언 완화,
@@ -84,7 +86,7 @@
 
 ## 3. 진행 상태 어휘 (고정)
 
-작업 상태: `⬜ 대기` · `🔵 진행 중` · `🟡 검수 대기` · `✅ 완료` · `⛔ 막힘` — 이 5개만 쓴다.
+작업 상태: `⬜ 대기` · `🔵 진행 중` · `🟡 검수 대기` · `✅ 완료` · `⛔ 막힘` — 작업 상태는 이 5개다. 요구사항 취소는 호환 상태 `취소`로 보존한다.
 문서 머리말의 문서 상태는 별도 어휘를 쓴다: `미작성` · `작성 중` · `확정`. 두 어휘를 섞지 않는다.
 `docs/status/STATUS.md`와 사이클 문서가 작업 상태 어휘로 집계된다.
 
@@ -161,3 +163,5 @@ Claude Code는 `ultrathink`(또는 `/model`에서 상위 모델), Codex는 reaso
 
 - (없음)
 
+
+운영 준비·완료의 기계 기준: `docs/guides/contract-evidence.md`. 계약 입력과 준비 판정, 코드 입력과 실제 실행 증거를 연결한다.

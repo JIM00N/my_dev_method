@@ -141,7 +141,7 @@
 - [ ] 4절 검증이 전부 통과했다 (증거: 명령과 결과)
 - [ ] `/mdm-review` 리뷰를 통과했다 (치명·높음 없음)
 - [ ] 검증을 약화시켜 통과시키지 않았다 (절대 규칙 11)
-- [ ] 구현이 `spec/`과 어긋나면 스펙을 먼저 고쳤다
+- [ ] 구현과 계약의 불일치 원인을 판정하고 올바른 쪽을 수정했다 (구현 오류 / 승인된 변경 / 미결정)
 - [ ] 발견한 문제가 `docs/quality/issues.md`에 기록되어 있다
 - [ ] `docs/status/STATUS.md`의 활성 병렬 작업 표에서 이 Story가 갱신되었다
 
@@ -150,3 +150,8 @@
 - 실제 결과 (계약과 달라진 점):
 - 배운 것 (규칙감이면 `rules-learned.md`로):
 - 이 문서를 `docs/plan/archive/stories/`로 이동했다 (폴더가 없으면 만든다): 예 / 아니오
+
+## 계약 근거 기록
+
+의존 파일·수용 기준을 register하고, inspect → ready → verify를 수행한다.
+`docs/guides/contract-evidence.md`가 입력 해시·12칸 판정·JUnit 증거의 정본이다.

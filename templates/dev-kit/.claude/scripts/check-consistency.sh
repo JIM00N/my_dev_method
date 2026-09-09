@@ -14,7 +14,8 @@
 #   J. 계획 깊이            self:plan 계획 문서가 기능·사양까지 내려가고 사양마다 영향 영역·선행·먼저를 갖는가 + 권한 표
 #                          (본체는 .claude/scripts/check-plan.py — 마크다운 파싱이라 파이썬이 맡는다. python3 필수)
 #
-# 정본: docs/spec/source-map.md (요구사항·화면 매핑표)
+# 정본: docs/spec/source-map.md (요구사항·화면), docs/meta/stories.json (의존 관계)
+# 운영 준비·완료: mdm-contract.py. B/G의 이름·개수 검사는 --init 호환 진단만 한다.
 # 실행: /mdm-plan 끝(도입 전 — J 만) · /mdm-review 1단계 · 사이클 시작 · /mdm-cycle-close · CI
 #
 # ID 형식을 고정하지 않는다. 상류가 붙인 ID를 그대로 쓰므로(FR-1 · R-AOTSCK · REQ-042 무엇이든),
@@ -26,6 +27,15 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MAP="$ROOT/docs/spec/source-map.md"
 UPSTREAM="$ROOT/docs/upstream"
 MANIFEST="$UPSTREAM/manifest.tsv"
+INITIALIZING=0
+SCOPE=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --init) INITIALIZING=1; shift ;;
+    --scope) [ "$#" -ge 2 ] || { echo "--scope 값이 필요하다"; exit 1; }; SCOPE="$2"; shift 2 ;;
+    *) echo "알 수 없는 인자: $1"; exit 1 ;;
+  esac
+done
 
 fail=0
 warn=0
@@ -176,6 +186,26 @@ else
   fi
 fi
 
+# 공통 모델이 source-map을 읽고 계약 근거의 유효성을 계산한다.
+# --init은 명시적인 도입 준비 전용이다. 운영 설정이 있으면 사용할 수 없다.
+MAP_CACHE=$(mktemp 2>/dev/null) || MAP_CACHE=""
+if [ -z "$MAP_CACHE" ]; then
+  bad "MDM_IO — 공통 모델의 임시 출력을 만들 수 없다"
+  finish
+fi
+trap 'rm -f "$J_STATE" "$MAP_CACHE"' EXIT
+MODEL_ARGS=(check --output "$MAP_CACHE")
+[ "$INITIALIZING" = 1 ] && MODEL_ARGS+=(--init)
+[ -n "$SCOPE" ] && MODEL_ARGS+=(--scope "$SCOPE")
+if ! python3 "$ROOT/.claude/scripts/mdm-contract.py" "${MODEL_ARGS[@]}"; then
+  bad "MDM_MODEL — 계약 검사 실패. docs/guides/contract-evidence.md를 확인한다"
+  finish
+fi
+# 도입 전 파일 부재와 양식만 존재하는 경우는 기존 J 경계와 구분해 유지한다.
+if [ -f "$MAP" ]; then MAP="$MAP_CACHE"; fi
+REQ_H=""; SCR_H=""
+[ -f "$MAP" ] && { REQ_H=$(header_of 2); SCR_H=$(header_of 3); }
+
 # 도입 전이면 나머지 검사는 대조할 것이 없다 — 실패시키지 않되, 상태를 분명히 알린다.
 # (검사 J 는 위에서 이미 돌았다. 거기서 실패했으면 finish 가 exit 1 로 내보낸다)
 # 꼬리말은 **J 가 실제로 돌았을 때만** J 를 말한다 — 무조건문이면 건너뛴 실행이
@@ -281,7 +311,7 @@ while IFS= read -r row; do
         ''|'—'|'-') ;;
         *[!0-9]*) caution "$id — 조건 수 칸이 숫자가 아니다: '$cond' (셀 수 없으면 '—' 로 둔다)" ;;
         *)
-          if [ "$n_test" -gt 0 ] && [ "$n_test" -lt "$cond" ]; then
+          if [ "$INITIALIZING" = 1 ] && [ "$n_test" -gt 0 ] && [ "$n_test" -lt "$cond" ]; then
             bad "$id — 검증 조건 $cond 개인데 테스트가 $n_test 개다. 나머지 $((cond - n_test)) 개는 검증되지 않은 채 완료가 된다 → 테스트를 더 쓴다"
           fi
           ;;
@@ -330,11 +360,11 @@ else
   if command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     # --untracked: 아직 커밋하지 않은 작업 중인 파일도 본다 (.gitignore는 존중한다)
     raw=$(git -C "$ROOT" grep --untracked -hoE "$CITE_RE" -- \
-            ':!docs/upstream' ':!docs/spec/source-map.md' ':!docs/guides' \
+            ':!docs/upstream' ':!docs/spec/source-map.md' ':!docs/guides' ':!docs/meta' ':!docs/evidence' ':!docs/reports' ':!.tmp' \
             ':!.claude' ':!*template*' 2>/dev/null)
   else
     raw=$(grep -rhoE "$CITE_RE" "$ROOT/docs" \
-            --exclude-dir=upstream --exclude-dir=guides \
+            --exclude-dir=upstream --exclude-dir=guides --exclude-dir=meta --exclude-dir=evidence --exclude-dir=reports \
             --exclude=source-map.md --exclude='*template*' 2>/dev/null)
   fi
   cited=$(printf '%s\n' "$raw" | grep -E "$EXACT_RE" | sort -u)
@@ -358,13 +388,8 @@ while IFS= read -r row; do
 done < <(scr_rows)
 
 # ── F. 참조 깨짐 ─────────────────────────────────────────────────────────
-# 백틱 `docs/…` `.claude/…` 참조가 실재하는지. 플레이스홀더는 검사하지 않는다.
-while IFS= read -r ref; do
-  [ -n "$ref" ] || continue
-  case "$ref" in *'<'*|*'*'*|*'…'*) continue ;; esac
-  [ -e "$ROOT/$ref" ] || bad "깨진 참조: \`$ref\` → 경로를 고치거나 그 파일을 만든다"
-done < <(grep -rho --include='*.md' -E '`(docs|\.claude)/[A-Za-z0-9@_<>*./…-]+\.(md|sh|json|tsv)`' \
-           "$ROOT/docs" "$ROOT/CLAUDE.md" 2>/dev/null | sed 's/`//g' | sort -u)
+# 선택적 상류 양식을 설명하는 키트 문서와 실제 제품 인용을 구분한다.
+python3 "$ROOT/.claude/scripts/mdm-ops.py" refs || bad "MDM_REFERENCE — 제품 문서의 참조를 확인한다"
 
 # ── G. 테스트 실재 ───────────────────────────────────────────────────────
 # B는 테스트 칸의 항목 수만 센다 — 존재하지 않는 이름을 적어도 조건 수 검사까지 통과한다는 뜻이다.
@@ -394,7 +419,7 @@ while IFS= read -r row; do
   for t in ${titems[@]+"${titems[@]}"}; do
     t=$(trim "$t")
     case "$t" in ''|'—'|'-') continue ;; esac
-    test_exists "$t" || \
+    [ "$INITIALIZING" = 0 ] || test_exists "$t" || \
       bad "$id — 테스트 '$t' 가 매핑표에는 있는데 코드에는 없다. 이름만 적으면 개수 검사가 속는다 → 그 이름으로 테스트를 쓰거나(RED 먼저), 잘못 적었으면 칸을 고친다"
   done
 done < <(req_rows)

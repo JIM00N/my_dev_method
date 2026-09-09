@@ -23,7 +23,7 @@ make_fixture() {
   local rows="$1" d="$TMP/fx"
   rm -rf "$d"
   mkdir -p "$d/.claude/scripts" "$d/docs/spec" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
   chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
 
   printf '# upstream\n' > "$d/docs/upstream/prd.md"
@@ -49,7 +49,7 @@ make_fixture() {
   printf '%s' "$d"
 }
 
-run() { ( cd "$1" && bash .claude/scripts/check-consistency.sh 2>&1 ); }
+run() { ( cd "$1" && bash .claude/scripts/check-consistency.sh --init 2>&1 ); }
 
 # 기대 신호가 출력에 있어야 한다
 expect_signal() { # $1 설명  $2 fixture경로  $3 기대 문자열
@@ -283,7 +283,7 @@ expect_signal "R9 개행 없는 마지막 줄의 유령 행을 잡는다" "$d" "
 # R10. [K6 보통] 도입 전 조기 종료 — fixture 가 없어 블록 제거 회귀를 못 잡던 것
 d="$TMP/fx"; rm -rf "$d"
 mkdir -p "$d/.claude/scripts" "$d/docs/spec"
-cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
 chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
 add_registries "$d"
 printf '# C01\n' > "$d/docs/plan/cycles/C01-first.md"
@@ -382,7 +382,7 @@ make_plan() {
   local d="$TMP/fxj" h
   rm -rf "$d"
   mkdir -p "$d/.claude/scripts" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$d/.claude/scripts/"
+  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
   chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
   printf '%s\n' "$1" > "$d/docs/upstream/plan.md"
   if command -v sha256sum >/dev/null 2>&1; then h=$(sha256sum "$d/docs/upstream/plan.md" | awk '{print $1}')
@@ -1274,7 +1274,7 @@ nopy="$TMP/nopy"; rm -rf "$nopy"; mkdir -p "$nopy"
 for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf mktemp rm sha256sum shasum find dirname basename; do
   p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nopy/$c"
 done
-out="$( cd "$d" && PATH="$nopy" "$(command -v bash)" .claude/scripts/check-consistency.sh 2>&1 )"; rc=$?
+out="$( cd "$d" && PATH="$nopy" "$(command -v bash)" .claude/scripts/check-consistency.sh --init 2>&1 )"; rc=$?
 case "$out" in
   *"python3 가 없어 계획 깊이 검사(J)를 돌릴 수 없다"*)
     if [ "$rc" = 1 ]; then ok "J35 python3 가 없으면 fail-closed 다 (건너뛰지 않는다)"
@@ -1289,7 +1289,7 @@ nomk="$TMP/nomk"; rm -rf "$nomk"; mkdir -p "$nomk"
 for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf rm sha256sum shasum find dirname basename python3; do
   p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nomk/$c"
 done
-out="$( cd "$d" && PATH="$nomk" "$(command -v bash)" .claude/scripts/check-consistency.sh 2>&1 )"; rc=$?
+out="$( cd "$d" && PATH="$nomk" "$(command -v bash)" .claude/scripts/check-consistency.sh --init 2>&1 )"; rc=$?
 case "$out" in
   *"임시 파일을 만들지 못해"*)
     if [ "$rc" = 1 ]; then ok "J35-b mktemp 가 없으면 fail-closed 다"

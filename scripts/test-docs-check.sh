@@ -84,7 +84,7 @@ expect_green "C 로케일에서도 통과한다 (오탐 없음)" "$d" "C"
 
 echo
 echo "검사 1-c — 이 저장소 자신의 백틱 경로"
-d=$(mkfx); sub "$d/STATUS.md" '`scripts/check-docs.sh`' '`scripts/does-not-exist.sh`'
+d=$(mkfx); printf '\n참조: `scripts/does-not-exist.sh`\n' >> "$d/STATUS.md"
 expect_red "없는 경로를 잡는다" "$d" "깨진 참조(저장소 자신)"
 
 d=$(mkfx); sub "$d/CLAUDE.md" '`.githooks/pre-commit`' '`.githooks/no-such-hook`'

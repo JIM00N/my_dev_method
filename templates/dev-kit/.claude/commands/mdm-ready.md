@@ -7,10 +7,18 @@ argument-hint: [Story ID 또는 요구사항 ID (여러 개면 쉼표). 생략�
 
 `docs/guides/ready.md`를 먼저 읽는다. 아래는 그 절차의 실행 순서다.
 
+등록한 Story의 `mdm-ops.py plan ST-번호` 결과로 이번 변경의 읽을 범위와 의미 비교 항목을 확인한다.
+영향 없는 문서를 다시 쓰지 않는다. 영향 분류와 비교 형식은 `docs/guides/operating-loop.md`가 정본이다.
+
 > **계층을 섞지 않는다.** 요구사항은 *"무엇이 되면 됐나"*(수용 기준 → 매핑표 `조건 수`),
 > Story는 *"어떻게 동작하나"*(개발 준비 슬롯 12칸)를 본다. 이 커맨드는 **Story 쪽**을 다룬다.
 
 ---
+
+## 0. 검토 입력을 고정한다
+
+`docs/guides/contract-evidence.md`에 따라 Story를 register한 뒤 inspect를 실행한다.
+fingerprint와 입력 목록을 검토 시작의 근거로 보관한다. 판정 직전에 다시 얻은 해시로 바꾸지 않는다.
 
 ## 1. AI가 초안을 채운다 ★
 
@@ -96,9 +104,12 @@ argument-hint: [Story ID 또는 요구사항 ID (여러 개면 쉼표). 생략�
 
 - 되돌리기 어려운 선택이면 **ADR을 남긴다** (`docs/decisions/`).
 - **정본에 먼저 쓰고** 그다음 Story 슬롯이 그것을 가리키게 한다. 순서를 뒤집지 않는다.
-- 마지막으로 `docs/spec/source-map.md` 매핑표의 **`준비` 칸을 롤업으로** 갱신한다:
-  `✅ ST-003,ST-004` / `❌ ST-004 규칙·전이`.
-  칸을 `✅`로 바꿔 검사를 통과시키지 않는다 — **실제로 채운 뒤에** 바꾼다 (절대 규칙 11).
+- 12칸 판정을 JSON으로 저장하고, 검토 시작 fingerprint로 `mdm-contract.py ready`를 실행한다.
+  behavior·권한·상태·데이터·외부 영향은 정본↔Story의 역할·조건·행동·결과 비교를 --comparison으로 함께 기록한다.
+  근거 형식·해당 없음의 이유·판정 주체는 `docs/guides/contract-evidence.md`를 따른다.
+- `mdm-contract.py render`로 준비 표시를 갱신한다. 사람이 ✅를 써도 판정 기록을 대신하지 못한다.
+- 판정 중 정본 내용을 수정했다면 이전 fingerprint로 ready가 실패한다. 새 입력을 inspect하고 변경분을
+  다시 확인한 뒤 그 근거로 기록한다. 상류 스냅샷은 --sync 절차로만 갱신한다.
 
 ## 6. 리포트
 
@@ -113,7 +124,7 @@ python3 .claude/scripts/report.py ready
 ## 7. 마감
 
 - `.claude/scripts/check-consistency.sh`를 실행해 통과시킨다.
-  진행 중인데 `준비` 칸이 `❌`·`재판정`·빈 칸이면 실패한다
+  진행 중인 요구사항의 준비 기록이 없거나 현재 계약과 다르면 실패한다
   (분기 전체는 `docs/guides/ready.md` 「검사기가 무엇을 막나」가 정본이다).
 - `docs/guides/ready.md`의 DoD를 하나씩 실제로 대조한다.
 - `docs/status/STATUS.md`에 점검 결과와 남은 `❌`를 기록한다.

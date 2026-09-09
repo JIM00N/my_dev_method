@@ -114,10 +114,10 @@ for dp, dns, fns in os.walk(root):
         n = rx.sub(lambda m: m.group(1), s)
         if n != s:
             open(p, "w", encoding="utf-8").write(n)
-        left += len(re.findall(r'mdm-', n))
+        left += len(rx.findall(n))
 # 합성이 실패하면(정규식 드리프트·python 변경) 조용히 통과시키지 않는다.
-# 키트 자신의 이름 규칙 설명(`.claude/README.md`)에 남는 `mdm-` 은 정상이라 상한을 둔다.
-if left > 12:
+# 개명 대상 9개만 잰다. 이후 추가된 mdm-contract 등의 이름은 이 합성과 무관하다.
+if left:
     sys.exit("0.6.0 합성이 새 이름을 %d건 남겼다 — 되돌리기가 깨졌다 (합성본이 0.6.0 이 아니다)" % left)
 PY
   [ $? = 0 ] || { ng "0.6.0 배포본 합성 실패 — 이 fixture 는 아무것도 재지 못한다"; return 1; }
@@ -133,7 +133,7 @@ echo "install-kit.sh — 0.7.0 개명 (설치기는 옛 이름을 건드리지 �
 check_list_sync "$INSTALL"
 
 # ── 1. 0.6.0 → 0.7.0 업그레이드: 불간섭 ──────────────────────────────
-d=$(make_old_install fx1)
+d=$(make_old_install fx1) || exit 1
 # **몇 개를 쟀는지 세어 단언한다.** `cksum` 은 없는 파일 하나를 stderr 로 흘리고 나머지를 찍는데
 # `$(...)` 가 rc 를 삼킨다 — 그러면 before/after 가 **둘 다 8줄**이 되어 「같다」로 통과하면서
 # 실제로는 9개 중 8개만 잰다. 3회전 K3 이 `EXIT=0, all green while measuring only 8 of 9` 로 잡았다.
@@ -191,7 +191,7 @@ else
 fi
 
 # ── 3. 프로젝트 데이터가 실리는 카탈로그 표는 보존된다 (KIT_OWNED → KIT_SEED) ──
-d2=$(make_old_install fx2)
+d2=$(make_old_install fx2) || exit 1
 printf '\n| C01 | 첫 사이클 | 진행 |\n' >> "$d2/docs/plan/index.md"
 printf '\n| ADR-001 | 스택 결정 | 채택 |\n' >> "$d2/docs/decisions/index.md"
 up "$d2"
@@ -239,7 +239,7 @@ sed 's|^  warn_renamed$|  for _r in $RENAMED_0_7_0; do rm -f "$TARGET/.claude/$_
 if ! grep -q 'rm -f "\$TARGET/.claude/\$_r"' "$mut"; then
   ng '뮤테이션 지점(들여쓴 warn_renamed 호출 줄)을 찾지 못했다 — 이 fixture 를 갱신한다'
 else
-  d4=$(make_old_install fx4)
+  d4=$(make_old_install fx4) || exit 1
   bash "$mut" "$d4" --upgrade > "$TMP/out4" 2>&1; mrc=$?
   if [ "$mrc" != 0 ] || ! grep -q '업그레이드 완료' "$TMP/out4"; then
     ng "뮤턴트가 정상 종료하지 않았다 (rc=$mrc) — 이 자기검증은 아무것도 재지 못한다:

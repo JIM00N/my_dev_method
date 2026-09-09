@@ -19,3 +19,5 @@ jobs:
         run: bash scripts/test-docs-check.sh
       - name: 설치·업그레이드 회귀 검사 (설치기가 0.7.0 개명의 옛 이름을 건드리지 않는가)
         run: bash scripts/test-install-upgrade.sh
+      - name: 계약·실행 증거·변경 운영 회귀
+        run: python3 -m unittest discover -s scripts/tests -v

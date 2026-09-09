@@ -113,30 +113,8 @@ def table(hdr, rows, cls=""):
 
 
 # ── source-map 표 읽기 ────────────────────────────────────────────────────
-def section_table(text, num):
-    """'## <num>.' 아래 첫 표를 (머리행, 데이터행들)로 돌려준다. 양식 행(<…>)은 뺀다."""
-    m = re.search(r"^## %d\..*$" % num, text, re.M)
-    if not m:
-        return [], []
-    seg = text[m.end():]
-    nxt = re.search(r"^## ", seg, re.M)
-    if nxt:
-        seg = seg[:nxt.start()]
-    lines = seg.split("\n")
-    for i, ln in enumerate(lines):
-        if re.match(r"^\|\s*ID\s*\|", ln):
-            hdr = [c.strip() for c in ln.strip().strip("|").split("|")]
-            rows = []
-            for ln2 in lines[i + 2:]:
-                if not ln2.startswith("|"):
-                    break
-                if re.match(r"^\|[\s:|-]+\|\s*$", ln2):
-                    continue
-                if "<" in ln2:
-                    continue
-                rows.append([c.strip() for c in ln2.strip().strip("|").split("|")])
-            return hdr, rows
-    return [], []
+# 검사기와 같은 source-map reader를 사용한다.
+from mdm_model import section_table
 
 
 def col(hdr, name):
@@ -169,26 +147,26 @@ def dashboard(hdr, rows):
             tests += n_items(cell(r, i_ts))
     cards = [
         ("요구사항", total, ""),
-        ("완료", done, "ok" if done else ""),
+        ("작업 완료 (기록)", done, ""),
         ("진행 중", prog, ""),
         ("막힘", block, "bad" if block else ""),
         ("준비 미달", notready, "bad" if notready else "ok"),
         ("점검 전", unchecked, "warn" if unchecked else "ok"),
     ]
     if cond:
-        cards.append(("검증 조건 대비 테스트", "%d / %d" % (tests, cond), "ok" if tests >= cond else "bad"))
+        cards.append(("등록 이름 / 조건 (검증 아님)", "%d / %d" % (tests, cond), ""))
     return '<div class="cards">%s</div>' % "".join(
         '<div class="card %s"><div class="n">%s</div><div class="l">%s</div></div>' % (c, v, html.escape(l))
         for l, v, c in cards
     )
 
 
-def check_output():
+def check_output(initializing=False):
     sh = os.path.join(ROOT, ".claude", "scripts", "check-consistency.sh")
     if not os.path.exists(sh):
         return None, ""
     try:
-        p = subprocess.run(["bash", sh], capture_output=True, text=True, timeout=120, cwd=ROOT)
+        p = subprocess.run(["bash", sh] + (["--init"] if initializing else []), capture_output=True, text=True, timeout=120, cwd=ROOT)
         txt = (p.stdout or "") + (p.stderr or "")
         # 마지막 요약 줄은 배너 제목이 이미 말하므로 본문에서 뺀다 (같은 말을 두 번 하지 않는다)
         keep = [l for l in txt.strip().split("\n") if l.strip() and not l.startswith("정합성 검사")]
@@ -317,16 +295,37 @@ def build(kind):
     hdr, rows = section_table(smap, 2)
     shdr, srows = section_table(smap, 3)
     parts = []
+    if os.path.isfile(os.path.join(ROOT, "docs", "meta", "project.json")):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mdm_contract", os.path.join(ROOT, ".claude", "scripts", "mdm-contract.py"))
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        try:
+            hdr, rows, shdr, srows, info, errors = module.evaluated()
+            parts.append(table(["Story", "계약 근거 유효성"], [[sid, value["reason"]] for sid, value in info.items()]))
+            fresh_path = module.operations.FRESHNESS
+            fresh = module.load(fresh_path) if module.path(fresh_path, False).exists() else {}
+            parts.append(table(["상류 확인 상태", "마지막 성공 시각 (현재 최신성 아님)"],
+                               [[str(fresh.get("status", "unknown")), str(fresh.get("last_success", "미확인"))]]))
+        except (ValueError, OSError, KeyError, TypeError) as exc:
+            parts.append('<div class="banner bad">%s</div>' % html.escape(str(exc)))
+            # Invalid input must never leave a trusted-looking legacy summary.
+            hdr, rows, shdr, srows = [], [], [], []
 
     if rows:
         parts.append(dashboard(hdr, rows))
 
-    rc, out = check_output()
+    initializing = kind in ("plan", "adopt") and not os.path.isfile(os.path.join(ROOT, "docs", "meta", "project.json"))
+    rc, out = check_output(initializing)
     if rc is not None:
         cls = "ok" if rc == 0 else "bad"
-        label = "정합성 검사 통과" if rc == 0 else "정합성 검사 실패 — 아래 항목을 해결한다"
+        label = ("도입 준비 검사 — 운영 통과 아님" if initializing else "정합성 검사 통과") if rc == 0 else "정합성 검사 실패 — 아래 항목을 해결한다"
         detail = ("<pre><code>%s</code></pre>" % html.escape(out.strip())) if out.strip() else ""
         parts.append('<div class="banner %s"><b>%s</b>%s</div>' % (cls, html.escape(label), detail))
+
+    if rc is None:
+        parts.append('<div class="banner bad">%s</div>' % html.escape(out or "검사 미실행 — 통과로 간주하지 않는다"))
 
     def sect(title, body):
         parts.append("<h2>%s</h2>" % html.escape(title))
@@ -349,7 +348,7 @@ def build(kind):
         rr = []
         for r in rows:
             c, t = cell(r, i_cd), n_items(cell(r, i_ts))
-            cov = "—" if not c.isdigit() else ("%d / %s %s" % (t, c, "✅" if t >= int(c) else "❌"))
+            cov = "—" if not c.isdigit() else ("%d / %s (등록 수)" % (t, c))
             rr.append([cell(r, i_id), cell(r, i_rd) or "점검 전", cov, cell(r, i_st)])
         sect("요구사항별 — 무엇이 되면 됐나 (수용 기준)",
              table(["ID", "준비 (Story 롤업)", "테스트 / 검증 조건", "상태"], rr) if rr else "")

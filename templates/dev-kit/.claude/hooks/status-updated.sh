@@ -30,6 +30,17 @@ git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 # 작업이 실제로 있었을 때만 요구한다. 변경이 없으면 갱신할 것도 없다.
 [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] || exit 0
 
+# 도입 후에는 날짜 대신 현재 파일 내용에 대응하는 인계 기록을 검사한다.
+# Stop 루프 방지는 그대로이며, 최종 통합 검사는 mdm-check.sh가 별도로 수행한다.
+if [ -f "$ROOT/docs/meta/project.json" ]; then
+  if python3 "$ROOT/.claude/scripts/mdm-ops.py" handoff-check >/dev/null 2>&1; then
+    exit 0
+  fi
+  touch "$marker" 2>/dev/null || true
+  echo '현재 변경의 인계 기록이 없다. STATUS 갱신 후 mdm-ops.py handoff를 실행한다. docs/guides/operating-loop.md 참고.' >&2
+  exit 2
+fi
+
 # "최종 갱신" 필드 행을 찾는다 (굵은 필드 우선, 없으면 첫 일치)
 line=$(grep -m1 -E '^\*\*최종 갱신\*\*' "$STATUS" 2>/dev/null || true)
 [ -n "$line" ] || line=$(grep -m1 '최종 갱신' "$STATUS" 2>/dev/null || true)

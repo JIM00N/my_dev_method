@@ -17,3 +17,9 @@
 ```
 
 상류 계획 문서(PRD·기능명세·유저플로우·와이어프레임)를 쓰는 프로젝트라면 요구사항 추적표는 `docs/spec/source-map.md`가 정본이다. 사이클·테스트·이슈는 그 표의 요구사항 ID·화면 ID를 인용한다 — 인용하지 않으면 무엇을 왜 만들었는지 추적되지 않고, 표에 없는 ID를 인용하면 검사가 고아 인용으로 잡는다.
+
+운영 준비·완료는 `docs/guides/contract-evidence.md`의 파일 해시와 실행 증거를 따른다.
+처음 도입 전만 --init이며 운영 통과가 아니다.
+
+상류 전체 처리 목록·변경 위험·의미 비교·인계·동기화는 `docs/guides/operating-loop.md`를 따른다.
+세션 시작에는 `mdm-ops.py handoff-check`로 이전 인계를 읽고, 종료·CI에는 `.claude/scripts/mdm-check.sh`를 실행한다.

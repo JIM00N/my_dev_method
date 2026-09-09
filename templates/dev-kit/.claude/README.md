@@ -8,7 +8,7 @@
 | 경로 | 무엇 | 대응하는 규칙 |
 |---|---|---|
 | `settings.json` | 훅 등록 (Bash + Write/Edit 양쪽 경로) | — |
-| `hooks/status-updated.sh` | 작업 트리에 변경이 있는데 STATUS의 "최종 갱신"이 오늘이 아니면 **세션 종료를 막는다** | 절대 규칙 9 |
+| `hooks/status-updated.sh` | 도입 후에는 현재 변경의 인계 기록을 검사한다. 도입 전에는 STATUS 날짜를 확인하며 반복 차단 방지는 유지 | 절대 규칙 9 |
 | `hooks/guard-dependency.sh` | `stack.md` 결정 표의 "선택" 열에 없는 패키지의 설치·매니페스트 편집을 **막는다** | 절대 규칙 4 |
 | `hooks/guard-secrets.sh` | 비밀 파일·비밀값 형태 문자열의 `git commit`(`-a`·같은 명령의 `git add` 대상 포함)과 형상 관리 대상 파일 쓰기를 **막는다** | 절대 규칙 12 · S4 4부 |
 | `scripts/check-consistency.sh` | 문서 정합성 기계 검사 **10종(A~J)** — 상류 스냅샷 무결성·요구사항 커버리지·테스트 실재·상류 변경 재검토 잔존·고아 ID 인용·화면 정합·참조 깨짐·**마일스톤 배치**·**문서 등재 대조**·**계획 깊이**(J, `self:plan` 한정) | `docs/spec/source-map.md` · `docs/upstream/plan.md` |
@@ -59,3 +59,14 @@ jq --version    # 훅 2개(guard-*)는 jq가 필요하다
 - **정합성은 스크립트가, 판단은 서브에이전트가.** `check-consistency.sh`는 훅이 아니라 스크립트다 —
   매 도구 호출마다 돌면 비싸고, 구현 도중에는 일시적으로 어긋나는 게 정상이기 때문이다.
   대신 `/mdm-review` 1단계·사이클 시작·`/mdm-cycle-close`·CI에서 돈다. **MCP를 부르지 않으므로** 상류가 죽어도, CI에서도 돈다.
+
+## 계약 근거 엔진
+
+mdm-contract.py와 mdm_model.py가 운영 구조·의존 관계·준비 해시·JUnit 실행 증거를 검사한다.
+기존 A~J에 앞서 공통 source-map 모델을 만들고, report.py도 같은 모델을 읽는다.
+운영 가이드는 `docs/guides/contract-evidence.md`다. --init은 도입 전 진단이며 운영 통과가 아니다.
+
+## 운영 검사
+
+상류 전체 대조·변경 위험별 의미 비교·내용 기반 인계·동기화 복구·제품 CI는 `docs/guides/operating-loop.md`를 따른다.
+mdm-ops.py는 mdm-contract.py와 mdm_operations.py·mdm_model.py를 함께 배포해야 한다.

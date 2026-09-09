@@ -1,0 +1,13 @@
+name: MDM project checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  mdm-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Current contract, execution evidence and handoff
+        run: bash .claude/scripts/mdm-check.sh

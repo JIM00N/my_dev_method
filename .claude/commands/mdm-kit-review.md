@@ -19,6 +19,7 @@ argument-hint: [리뷰 범위. 생략하면 현재 작업 트리의 변경 전�
 scripts/check-docs.sh        # 경로·참조(키트 + **이 저장소 자신**) · 절 이름 포인터 · 축↔에이전트 대응 · 셸 문법 · **훅 실행 권한** (`.githooks/*` 포함 — 권한이 빠지면 게이트가 조용히 fail-open 된다)
 scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 실측 + 뮤테이션 자기검증
 scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기 · I 문서 등재 대조 · **J 계획 깊이**)
+python3 -m unittest discover -s scripts/tests -v  # 계약 근거·실행 증거
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
 scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (34 케이스 — 루트 `CLAUDE.md`가 정본) — 검사 1-c·5·6·7·8·9·10·11 에 위반을 심어 붉어지는지 실측
 scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (13 + 뮤테이션 1) — 설치기가 0.7.0 개명의 옛 이름을 **건드리지 않는가**(불간섭) + 알림·카탈로그 행 보존·키트 문서 갱신
@@ -85,9 +86,9 @@ scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (13 + 
 4. **1회전이다.** 최초 리뷰 한 번으로 끝내고 재리뷰를 돌리지 않는다. `issues.md` 에 그 사실을 남긴다.
    수정 뒤에도 치명·높음이 남거나, **수정 자체가 새 위험을 만든다고 판단되면** 검사를 약화시키지 않고
    `STATUS.md`에 ⛔로 올려 **사용자 판단을 받는다.**
-   (2026-08-28 사용자 결정. 그전에는 상한 3회전이었고, 0.8.0 Phase 0+1 이 그 규칙의 대가를 실측했다 —
-   2회전 발견이 거의 전부 1회전 수정이 새로 쓴 코드에서 나왔고, 그중엔 이 저장소가 이미 두 번 확정한
-   결함의 재발도 있었다. **회전을 늘리는 것보다 fixture 를 늘리는 것이 싸다.**)
+   (2026-08-28 사용자 결정. 상한은 유지한다. 후속 관측에서 재리뷰가 과거 결함도 찾았으므로
+   “직전 수정이 새 결함만 만든다”는 일반화는 철회한다. 수정 근거는 재현 fixture로 남긴다.)
+
 5. 판정(통과/실패)과 남은 항목을 `STATUS.md`에 반영한다.
 6. **판정이 통과면 도장을 찍는다**: `.claude/scripts/review-stamp.sh --write`(커밋될 트리를 도장에 기록).
    **그다음 커밋은 절대 규칙 2-1(승인 모드)에 따라 사용자에게 묻고 답을 받은 뒤에 한다** —

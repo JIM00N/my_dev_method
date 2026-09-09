@@ -1,4 +1,4 @@
-<!-- dev-kit v0.7.0 · 원본: my_dev_method/templates/dev-kit · 업그레이드 절차: 원본 저장소 templates/dev-kit/README.md -->
+<!-- dev-kit v1.0.0 · 원본: my_dev_method/templates/dev-kit · 업그레이드 절차: 원본 저장소 templates/dev-kit/README.md -->
 
 # &lt;괄호 안에 프로젝트명 작성할 것.&gt;
 

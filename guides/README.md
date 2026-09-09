@@ -8,3 +8,5 @@
 | 문서 | 대상 | 내용 |
 |---|---|---|
 | [getting-started.md](getting-started.md) | 절차를 따를지 판단하려는 사람 | 각 장치가 **왜** 그 모양인지 — 네 개의 층, 리뷰 분리, STATUS 한 장, 프로파일, 두 개의 승격 |
+| [harness-architecture.md](harness-architecture.md) | 하네스 내부를 확인하려는 사람 | V1.0.0 구성도·호출 관계·소스 지도·검사 경계 |
+| [harness-walkthrough.md](harness-walkthrough.md) | 운영 흐름을 이해하려는 사람 | 요구사항 하나의 도입·준비·실행·변경·인계 예시 |

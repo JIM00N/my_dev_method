@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "my_dev_method — 기계적으로 강제되는 AI 개발방법론 키트(dev-kit)의 플러그인 마켓플레이스",
-    "version": "2.0.0"
+    "version": "2.0.1"
   },
   "plugins": [
     {
       "name": "mdm",
       "source": "./plugins/mdm",
       "description": "AI 개발 하네스 dev-kit — /mdm:init 으로 제품 저장소에 문서 골격을 심고, 커맨드·서브에이전트·훅·검사 엔진은 플러그인이 제공한다",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": { "name": "Jiseok (JIM00N)" },
       "license": "MIT",
       "keywords": ["methodology", "dev-kit", "harness", "korean"],

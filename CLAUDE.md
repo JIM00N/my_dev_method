@@ -110,15 +110,15 @@ K5 의미적 문서 정합 · K6 회귀 증거 — 치명·높음은 `mdm-kit-re
   **둘은 `check-plan.py` 본체에 직접 뮤테이션을 가한다** — 셸의 호출 블록만 재면
   「셸이 J 를 부른다」까지만 증명되고 정작 판정하는 파일이 무검증으로 남는다 (0.8.0 이식이 만든 자리)
 - `scripts/test-report.sh` — `report.py` 회귀 fixture: Story 문서 ↔ 사이클 축약 슬롯 공존 모드 (CI)
-- `scripts/test-install-upgrade.sh` — `plugins/mdm/scripts/init-project.sh`(`mdm init`) 회귀 fixture (CI). **단언 49줄 = 케이스 48 + 뮤테이션 자기검증 1**
+- `scripts/test-install-upgrade.sh` — `plugins/mdm/scripts/init-project.sh`(`mdm init`) 회귀 fixture (CI). **단언 52줄 = 케이스 50 + 뮤테이션 자기검증 2**
   (재는 법: `bash scripts/test-install-upgrade.sh | grep -cE '^  (통과|실패)  '`).
   재는 것: 신규 설치가 **문서 골격과 플러그인 등록만** 심는가(`.claude/` 키트 파일을 복사하지 않는가) · `.claude/settings.json` 의
   다른 키·다른 플러그인 등록을 보존한 채 두 키만 더하는가, 깨진 JSON 은 건드리지 않고 실패하는가 · **1.x 잔재를 내용 해시로만 분류**하는가
   (같음/다름/키트가 쓴 적 없는 이름 — 합성 매니페스트 `MDM_LEGACY_MANIFEST` 로 잰다) · 기본은 **불간섭**(9개 체크섬 대조, 몇 개를 쟀는지까지 단언)이고
   `--retire-legacy` 도 「같음」만 개칭하며 그 훅의 `settings.json` 등록만 빼는가 · 카탈로그 행·meta·evidence·source-map·기존 CI 워크플로 보존 ·
-  키트 소유 가이드 교체 · CLAUDE.md 사이드카 · 스탬프≠plugin.json 이면 아무것도 심지 않고 죽는가 · 실물 `legacy-manifest.tsv` 형식과 1.0.0 포함 · 옛 진입점 래퍼 ·
+  키트 소유 가이드 교체 · CLAUDE.md 사이드카 · **팀원 안내(신규·업그레이드 출력)가 설치 한 줄을 주고 2.0.0 의 자동 설치 문구를 되살리지 않는가**(금지어 대조 — 다른 말로 쓴 약속까지는 못 잡는다) · 스탬프≠plugin.json 이면 아무것도 심지 않고 죽는가 · 실물 `legacy-manifest.tsv` 형식과 1.0.0 포함 · 옛 진입점 래퍼 ·
   **핀 없는 1.x CI 옆에 양식 사이드카**(#427) · **실패 경로**(가이드 쓰기 실패 · 매니페스트 부재 · 객체 아닌 settings 값 · settings 링크 · `.gitignore` 쓰기 실패 — 「완료」를 찍지 않고 멈추는가).
-  뮤테이션은 해시 대조를 끄면 「다름」 파일이 개칭되는 것을 보인다.
+  뮤테이션은 해시 대조를 끄면 「다름」 파일이 개칭되는 것을, 둘째는 설치 한 줄을 2.0.0 문구로 되돌리면 팀원 안내 단언이 거짓이 되는 것을 보인다.
   옛 이름 처리를 설치기가 추측으로 하던 두 판은 리뷰가 **치명**으로 잡아 사용자 결정으로 걷어냈다(0.7.0) — 2.0.0 의 분류는 추측이 아니라 해시지만
   그 결정을 뒤집는 것은 사용자 몫이라 **옵트인 플래그**로만 둔다 (2026-09-11 사용자 승인 — issues #437).
 - `scripts/test-hooks.sh` — 플러그인 훅 3개의 회귀 fixture (CI). **단언 15줄 = 케이스 12 + 뮤테이션 3.** 훅이 키트 표식(`docs/status/STATUS.md`)이 있는 저장소에서는

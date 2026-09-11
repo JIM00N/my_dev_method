@@ -8,7 +8,9 @@
 #
 # 2.0.0 부터 커맨드·서브에이전트·훅·검사 엔진은 **플러그인이 제공**하고 제품에 복사하지 않는다.
 # 제품에 심는 것은 다섯 가지다 — CLAUDE.md · AGENTS.md · docs/ · .github/workflows/mdm-check.yml(없을 때만) ·
-# .gitignore 줄 — 그리고 .claude/settings.json 에 플러그인을 **프로젝트 범위로 등록**한다(팀 전체가 같은 판을 받는다).
+# .gitignore 줄 — 그리고 .claude/settings.json 에 플러그인을 **프로젝트 범위로 등록**한다. 팀원이 폴더를 신뢰하면 마켓플레이스는
+# 자동으로 추가된다. 플러그인까지 설치되는지는 실측하지 않았다 — Claude Code 2.1.195 부터 프로젝트 설정만으로 켠 외부 플러그인은
+# 각자 설치 동의를 받는다(Claude Code CHANGELOG). 그래서 출력은 설치를 약속하지 않고 설치 한 줄을 준다.
 #
 # 소유권 규칙 (plugins/mdm/README.md 의 표가 정본):
 #   - 키트 소유 문서(guides·템플릿·대부분의 index)만 교체한다.
@@ -361,8 +363,10 @@ if [ "$MODE" = "install" ]; then
   1. CLAUDE.md 상단 첫 두 줄(제목·한 줄 설명)을 프로젝트 것으로 바꾼다
   2. docs/status/STATUS.md에 시작 시점 기록
   3. (업무 자동화·AX 프로젝트면) docs/guides/addons/business-automation.md 확인 (CLAUDE.md 라우팅 표에 연결돼 있다)
-  4. .claude/settings.json 에 플러그인 ${PLUGIN_ID} 를 프로젝트 범위로 등록했다 — **Claude Code 를 다시 시작**하면
-       설치를 묻는다. 묻지 않으면: /plugin marketplace add ${MARKET_REPO} → /plugin install ${PLUGIN_ID}
+  4. .claude/settings.json 에 플러그인 ${PLUGIN_ID} 를 프로젝트 범위로 등록했다. 팀원이 이 저장소를 열어 폴더를 신뢰하면
+       마켓플레이스는 자동으로 추가된다. 플러그인이 설치되지 않았다고 나오면(Claude Code 2.1.195 부터 프로젝트 설정만으로 켠
+       외부 플러그인은 각자 설치 동의를 받는다) 원본 저장소를 클론하지 않고 이 한 줄로 설치한 뒤 Claude Code 를 다시 시작한다:
+         claude plugin marketplace add ${MARKET_REPO} && claude plugin install ${PLUGIN_ID}
        확인: /hooks 에 훅 3개(status-updated · guard-dependency · guard-secrets), /help 에 /mdm:… 커맨드
   5. /mdm:adopt 를 실행한다 (현재 단계 S0) — 진입점은 하나다.
        (제품 CI(.github/workflows/mdm-check.yml)는 도입 — mdm contract adopt — 전에는 붉다. 그 실패가 정상이다)
@@ -408,6 +412,9 @@ else
        없으면(1.x 양식) 위 ⚠ 대로 mdm-check.yml.dev-kit-new 로 교체한다 — 'mdm doctor' 의 ci_pin_matches·ci_legacy 가 대조한다
   5. docs/status/STATUS.md 최근 결정에 업그레이드 사실 한 줄
   6. **세션을 다시 시작한다** — 플러그인 등록·커맨드 목록은 세션 시작 시점에 읽힌다.
+       팀원: 폴더를 신뢰하면 마켓플레이스는 자동으로 추가된다. 플러그인이 설치되지 않았다고 나오면 각자 이 한 줄로 설치한다
+       (1.x 처럼 훅이 저장소에 들어 있지 않다 — 옛 훅을 물렸다면 플러그인을 설치하기 전까지 그 세션에 훅이 없다):
+         claude plugin marketplace add ${MARKET_REPO} && claude plugin install ${PLUGIN_ID}
        위에 ⚠ 로 알린 1.x 잔재가 있으면 플러그인 README 「1.x 에서 올라오기」를 따른다
 NEXT
 fi

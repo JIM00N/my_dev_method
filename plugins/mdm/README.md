@@ -1,6 +1,6 @@
 # dev-kit — AI 개발 지시서 플러그인 (`mdm`)
 
-**버전: 2.0.0** — Claude Code 플러그인 `mdm@my-dev-method`. 제품 저장소의 배포본 버전은 `CLAUDE.md` 첫 줄의
+**버전: 2.0.1** — Claude Code 플러그인 `mdm@my-dev-method`. 제품 저장소의 배포본 버전은 `CLAUDE.md` 첫 줄의
 `<!-- dev-kit v… -->` 스탬프로, 플러그인 버전은 `mdm version` 으로 확인한다 (플러그인이 심는 양식의 스탬프와 plugin.json 버전이 다르면 `mdm init` 이 아무것도 심지 않고 멈춘다. 제품 쪽 스탬프는 `mdm init --upgrade` 가 인쇄만 한다 — 제품이 옛 판인지는 첫 줄 스탬프로 사람이 본다).
 
 AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **범용 지시서 + 문서 골격 + 강제 장치** 세트.
@@ -33,10 +33,16 @@ AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **
 
 ## 설치
 
+Claude Code 에서 쓰려면 원본 저장소를 클론하지 않는다 — 아래 명령이 Claude Code 에게 저장소를 직접 받아 오게 한다.
+「마켓플레이스」는 공개 스토어가 아니라 원본 저장소 루트의 목록 파일(`.claude-plugin/marketplace.json`)이고, 등록·심사 절차가 없다.
+Claude Code 는 모든 플러그인 설치를 이 목록을 거쳐 하므로 파일은 필요하다.
+
 ```text
 /plugin marketplace add JIM00N/my_dev_method      # 마켓플레이스 my-dev-method 등록 (한 번)
 /plugin install mdm@my-dev-method                  # 플러그인 설치 (사용자 범위)
 ```
+
+터미널에서는 `claude plugin marketplace add JIM00N/my_dev_method && claude plugin install mdm@my-dev-method` 한 줄이다.
 
 그다음 **제품 저장소에서** (Claude Code 를 그 저장소에서 연 채로):
 
@@ -46,11 +52,14 @@ AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **
 
 `/mdm:init` 은 `mdm init "$PWD"` 를 돌려 다음을 심는다 — `CLAUDE.md` · `AGENTS.md` · `docs/` 전체 ·
 `.github/workflows/mdm-check.yml`(없을 때만) · `.gitignore` 의 `docs/reports/` · **`.claude/settings.json` 의 플러그인 등록**
-(`extraKnownMarketplaces.my-dev-method` + `enabledPlugins."mdm@my-dev-method"`, 프로젝트 범위 — 팀원이 저장소를 열면 같은 판을 받는다).
+(`extraKnownMarketplaces.my-dev-method` + `enabledPlugins."mdm@my-dev-method"`, 프로젝트 범위). 팀원이 저장소를 열어 폴더를 신뢰하면
+마켓플레이스는 자동으로 추가된다. **플러그인이 설치되지 않았다고 나오면** 위 터미널 한 줄로 설치하고 다시 시작한다 —
+Claude Code 2.1.195 부터 프로젝트 설정만으로 켠 외부 플러그인은 각자 설치 동의를 받는다(Claude Code CHANGELOG). 이 플러그인처럼
+마켓플레이스 안의 상대 경로(`./plugins/mdm`)로 든 플러그인이 그 「외부」에 드는지는 **실측하지 않았다** — 그래서 안내는 조건부다.
 `CLAUDE.md` 나 `docs/` 가 이미 있으면 중단한다(`--upgrade` 를 쓰라고 안내). **`.claude/` 에 키트 파일을 복사하지 않는다.**
 
 복사 후 할 일은 설치 출력의 「이어서 할 일」이 정본이다 — 요약하면: `CLAUDE.md` 머리 두 줄을 프로젝트 것으로 →
-`docs/status/STATUS.md` 시작 기록 → 세션 재시작(등록 반영) → `/hooks` 로 훅 3개 확인 → **`/mdm:adopt`** (S0).
+`docs/status/STATUS.md` 시작 기록 → 팀원에게 설치 한 줄 전달(설치되지 않았다고 나올 때) → 세션 재시작 → `/hooks` 로 훅 3개 확인 → **`/mdm:adopt`** (S0).
 
 **로컬 개발판을 쓰려면** (원본 저장소를 고치면서 제품에 바로 써 볼 때):
 
@@ -94,9 +103,9 @@ claude --plugin-dir /경로/my_dev_method/plugins/mdm        # 그 세션에서�
 **`docs/status/STATUS.md`** 가 있을 때만 판정하고 없으면 통과한다. 정직한 한계: 표식을 지우면 훅이 꺼진다 —
 1.x 에서 훅 파일을 지우면 꺼지던 것과 같은 신뢰 수준이고, 그 수준은 규칙 11(훅 우회 금지)과 `/mdm:review` 가 다룬다.
 표식은 `hooks/lib-root.sh` 가 `MDM_PROJECT_ROOT` → `CLAUDE_PROJECT_DIR` → 현재 디렉토리에서 출발해 **git 최상위까지 위로** 찾는다 —
-제품 하위 디렉토리에서 띄운 세션은 `CLAUDE_PROJECT_DIR` 가 그 하위 경로이기 때문이다(실측). 단 `/mdm:init` 이 쓰는 **프로젝트 범위** 등록은
-`.claude/settings.json` 을 세션 시작 디렉토리에서만 읽으므로(Claude Code 동작) 하위 디렉토리 세션에는 플러그인 자체가 켜지지 않는다 —
-**제품 루트에서 세션을 연다.** 훅이 실제로 이렇게 판정하는지는 원본 저장소 `scripts/test-hooks.sh` 가 재고, 우회는 K2 리뷰가 재현한다.
+제품 하위 디렉토리에서 띄운 세션은 `CLAUDE_PROJECT_DIR` 가 그 하위 경로이기 때문이다(실측). 단 플러그인을 `/mdm:init` 이 쓰는 **프로젝트 범위** 등록으로만 켰다면
+그 `.claude/settings.json` 을 세션 시작 디렉토리에서만 읽으므로(Claude Code 동작) 하위 디렉토리 세션에는 플러그인 자체가 켜지지 않는다 —
+**제품 루트에서 세션을 연다.** 위 설치 절의 명령(사용자 범위)으로 설치했으면 하위 디렉토리 세션에서도 켜진다. 훅이 실제로 이렇게 판정하는지는 원본 저장소 `scripts/test-hooks.sh` 가 재고, 우회는 K2 리뷰가 재현한다.
 
 ## 파일 소유권 — 설치·업그레이드의 기준 ★
 
@@ -159,6 +168,10 @@ claude --plugin-dir /경로/my_dev_method/plugins/mdm        # 그 세션에서�
 올릴 핀이 없다. 설치기가 옆에 둔 `mdm-check.yml.dev-kit-new`(2.0.0 양식)로 **먼저 교체한 뒤** `--retire-legacy` 를 쓴다.
 순서를 뒤집으면 물린 `.claude/scripts/mdm-check.sh` 를 CI 가 부르다 그 순간 깨진다 (`mdm doctor` 의 `ci_legacy: true` 가 그 상태다).
 
+**팀원에게 설치 한 줄을 전한다.** 1.x 팀원은 저장소에 복사된 훅을 clone 만으로 받았다. 2.0.0 은 저장소에 플러그인 등록만 남기므로,
+`--retire-legacy` 로 옛 훅을 물린 뒤에는 플러그인이 설치되지 않은 팀원 세션에 훅이 없다. 플러그인이 설치되지 않았다고 나오면 각자
+`claude plugin marketplace add JIM00N/my_dev_method && claude plugin install mdm@my-dev-method` 를 돌린다 — 업그레이드 출력 6번이 같은 줄을 준다.
+
 물린 파일을 확인하고 지웠다면 **문서에 남은 옛 이름 참조도 함께 고친다** — `/mdm-adopt` → `/mdm:adopt`, `mdm-code-review` → `mdm:code-review`,
 `.claude/scripts/check-consistency.sh` → `mdm check`, `python3 .claude/scripts/mdm-contract.py …` → `mdm contract …`. `mdm ops refs` 가 제품 문서(`docs/**/*.md`·`CLAUDE.md`)의 백틱 경로 참조를 **첫 건에서 멈추며 한 건씩** 알린다 — 이름 참조(`/mdm-adopt`)와 `.github/workflows` 는 대상 밖이라 `grep -rn '\.claude/scripts\|/mdm-' docs CLAUDE.md .github` 로 함께 찾는다.
 
@@ -167,7 +180,7 @@ claude --plugin-dir /경로/my_dev_method/plugins/mdm        # 그 세션에서�
 검사 엔진은 커맨드가 아니라 스크립트라서 어디서든 돈다. 원본 저장소를 받아 런처를 부른다 — 제품 CI 양식이 정확히 이렇게 한다:
 
 ```bash
-git clone --depth 1 --branch v2.0.0 https://github.com/JIM00N/my_dev_method.git "$RUNNER_TEMP/mdm"
+git clone --depth 1 --branch v2.0.1 https://github.com/JIM00N/my_dev_method.git "$RUNNER_TEMP/mdm"
 MDM_PROJECT_ROOT="$PWD" bash "$RUNNER_TEMP/mdm/plugins/mdm/bin/mdm" final
 ```
 

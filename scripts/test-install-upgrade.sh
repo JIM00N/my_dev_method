@@ -11,6 +11,8 @@
 #       해시는 추측이 아니지만 그 결정을 뒤집는 것은 사용자 몫이라 옵트인이다.)
 #   4) 업그레이드가 키트 소유 문서는 갈고, 프로젝트 소유(카탈로그 행·증거·CI 워크플로·source-map)는 보존한다.
 #   5) 배포본 무결성 — templates/CLAUDE.md 스탬프 ≠ plugin.json version 이면 설치기가 죽는다.
+#   6) 설치기 출력(신규·업그레이드)이 팀원에게 설치 한 줄(마켓플레이스 추가 && 설치)을 주고 2.0.0 의 자동 설치 문구를 되살리지 않는다.
+#      금지어 대조라 다른 말로 쓴 약속까지는 못 잡는다. 뮤테이션 자기검증 둘째가 이 단언이 실제로 그 문구를 재고 있음을 보인다.
 #
 # 분류 근거(legacy-manifest.tsv)는 MDM_LEGACY_MANIFEST 로 **합성본**을 넘긴다 — 실제 1.x 파일 바이트가 없어도
 # 「해시가 같다/다르다」의 분기를 잰다. 배포되는 실물 매니페스트는 별도로 형식·포함 항목을 단언한다.
@@ -30,6 +32,13 @@ PLUGIN_VER=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["ve
 
 fresh() { local d="$TMP/$1"; rm -rf "$d"; mkdir -p "$d"; git -C "$d" init -q; printf '%s' "$d"; }
 run_init() { bash "$INIT" "$@" > "$TMP/out" 2>&1; RC=$?; }
+# 팀원 설치 안내 — 설치 한 줄이 한 줄 그대로 있고(마켓플레이스 추가가 먼저다: 설치만 주면 마켓플레이스가 없는 사람에게 rc=1),
+# 2.0.0 의 자동 설치 문구가 없는가. 줄바꿈을 공백으로 합쳐 대조하므로 두 줄로 나눈 문구도 잡는다.
+TEAM_LINE='claude plugin marketplace add JIM00N/my_dev_method && claude plugin install mdm@my-dev-method'
+teammate_ok() {
+  grep -qxE "[[:space:]]+${TEAM_LINE}" "$1" || return 1
+  ! tr '\n' ' ' < "$1" | grep -qE '설치를[[:space:]]*(묻|물어)|자동으로[[:space:]]*설치|같은[[:space:]]*판을[[:space:]]*받'
+}
 
 echo "1. 신규 설치 — 문서 골격과 플러그인 등록만"
 d=$(fresh fx1); run_init "$d"
@@ -50,11 +59,18 @@ PY
 grep -q "dev-kit v${PLUGIN_VER} " "$d/CLAUDE.md" && ok "심은 CLAUDE.md 스탬프가 플러그인 버전(${PLUGIN_VER})이다" || ng "CLAUDE.md 스탬프가 플러그인 버전과 다르다"
 grep -q "MDM_KIT_REF: v${PLUGIN_VER}" "$d/.github/workflows/mdm-check.yml" && ok "심은 CI 양식의 핀이 플러그인 버전이다" || ng "CI 양식의 MDM_KIT_REF 핀이 플러그인 버전과 다르다"
 grep -q '/mdm:adopt' "$TMP/out" && ok "다음 행동으로 /mdm:adopt 를 안내한다" || ng "설치 출력이 다음 행동(/mdm:adopt)을 말하지 않는다"
+# 팀원 안내 — 2.0.0 출력은 「다시 시작하면 설치를 묻는다」고 약속했다. Claude Code 2.1.195 부터 프로젝트 settings 만으로 켠 외부 플러그인은
+# 각자 설치 동의를 받는다 — 이 플러그인이 그 대상인지는 실측하지 않았으므로 출력은 설치를 약속하지 않고 한 줄을 준다.
+if teammate_ok "$TMP/out"; then
+  ok "신규 설치 출력이 팀원 설치 한 줄(마켓플레이스 추가 && 설치)을 주고 2.0.0 자동 설치 문구가 없다"
+else ng "신규 설치 출력에 팀원 설치 한 줄이 없거나 2.0.0 자동 설치 문구(설치를 묻는다·자동으로 설치·같은 판을 받는다)가 있다"; fi
 grep -qxF 'docs/reports/' "$d/.gitignore" && ok ".gitignore 에 docs/reports/ 를 넣는다" || ng ".gitignore 에 docs/reports/ 가 없다"
 run_init "$d"
 [ "$RC" != 0 ] && grep -q -- '--upgrade' "$TMP/out" && ok "이미 설치된 곳에 다시 설치하면 중단하고 --upgrade 를 안내한다" || ng "재설치를 막지 않았다 (rc=$RC)"
 run_init "$d" --upgrade
 [ ! -e "$d/.github/workflows/mdm-check.yml.dev-kit-new" ] && ok "핀이 있는 CI(2.0.0 양식)에는 사이드카를 남기지 않는다" || ng "핀이 이미 있는데 CI 사이드카를 남겼다"
+if teammate_ok "$TMP/out"; then ok "업그레이드 출력도 팀원 설치 한 줄을 주고 자동 설치 문구가 없다 (1.x 팀은 저장소에 든 훅을 clone 만으로 받던 집단이다)"
+else ng "업그레이드 출력에 팀원 설치 한 줄이 없거나 자동 설치 문구가 있다"; fi
 
 echo
 echo "2. 기존 settings.json 보존"
@@ -269,6 +285,22 @@ else
     ng "해시 대조를 껐는데도 「다름」 파일이 남았다 — fixture 가 해시 분기를 재고 있지 않다"
   else
     ok "해시 대조를 끄면 「다름」 파일이 개칭된다 (fixture 가 진짜로 해시 분기를 재고 있다)"
+  fi
+fi
+
+# 둘째 — 설치 한 줄을 2.0.0 문구로 되돌린 설치기에서 팀원 안내 단언이 거짓이어야 한다. 그래야 1절·업그레이드 단언이 그 문구를 잰 것이다.
+cp -R "$PLUGIN" "$TMP/mut2"
+sed 's/.*claude plugin marketplace add .*claude plugin install.*/       Claude Code 를 다시 시작하면 설치를 묻는다./' "$INIT" > "$TMP/mut2/scripts/init-project.sh"
+if ! grep -q '설치를 묻는다' "$TMP/mut2/scripts/init-project.sh"; then
+  ng '뮤테이션 지점(팀원 설치 한 줄)을 찾지 못했다 — 이 fixture 를 갱신한다'
+else
+  d=$(fresh fx7); bash "$TMP/mut2/scripts/init-project.sh" "$d" > "$TMP/out" 2>&1; mrc=$?
+  if [ "$mrc" != 0 ]; then
+    ng "팀원 안내 뮤턴트가 정상 종료하지 않았다 (rc=$mrc) — 이 자기검증은 아무것도 재지 못한다"; tail -3 "$TMP/out" | sed 's/^/      /'
+  elif teammate_ok "$TMP/out"; then
+    ng "설치 한 줄을 2.0.0 문구로 되돌렸는데 팀원 안내 단언이 참이다 — 그 단언은 아무것도 재지 않는다"
+  else
+    ok "설치 한 줄을 2.0.0 문구로 되돌리면 팀원 안내 단언이 거짓이 된다 (단언이 진짜로 그 문구를 잰다)"
   fi
 fi
 

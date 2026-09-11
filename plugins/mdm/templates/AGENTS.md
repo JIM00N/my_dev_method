@@ -20,7 +20,7 @@ mdm check
 다른 에이전트·터미널에서는 원본 저장소를 받아 그 런처를 직접 부른다 — 제품 CI 양식(`.github/workflows/mdm-check.yml`)이 하는 방식과 같다:
 
 ```bash
-git clone --depth 1 --branch v2.0.0 https://github.com/JIM00N/my_dev_method.git /tmp/mdm
+git clone --depth 1 --branch v2.0.1 https://github.com/JIM00N/my_dev_method.git /tmp/mdm
 export PATH="/tmp/mdm/plugins/mdm/bin:$PATH"     # 이후 mdm check · mdm final · mdm contract … 가 돈다
 ```
 

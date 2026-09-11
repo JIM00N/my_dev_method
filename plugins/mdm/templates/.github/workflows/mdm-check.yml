@@ -7,7 +7,7 @@ permissions:
 env:
   # dev-kit 플러그인 버전 핀. 플러그인을 올리면 이 값도 올린다 — `mdm doctor` 가 플러그인 버전과 대조한다(ci_pin_matches).
   # 원본 저장소 태그는 v<버전> 이다 (plugins/mdm/.claude-plugin/plugin.json 의 version 과 같다).
-  MDM_KIT_REF: v2.0.0
+  MDM_KIT_REF: v2.0.1
 jobs:
   mdm-check:
     runs-on: ubuntu-latest

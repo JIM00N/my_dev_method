@@ -1,4 +1,4 @@
-<!-- dev-kit v2.0.0 · 원본: my_dev_method/plugins/mdm (Claude Code 플러그인 mdm@my-dev-method) · 업그레이드 절차: 원본 저장소 plugins/mdm/README.md -->
+<!-- dev-kit v2.0.1 · 원본: my_dev_method/plugins/mdm (Claude Code 플러그인 mdm@my-dev-method) · 업그레이드 절차: 원본 저장소 plugins/mdm/README.md -->
 
 # &lt;괄호 안에 프로젝트명 작성할 것.&gt;
 

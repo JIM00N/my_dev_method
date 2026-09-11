@@ -22,7 +22,7 @@ scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 �
 python3 -m unittest discover -s scripts/tests -v  # 계약 근거·실행 증거
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
 scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (단언 47줄 — 루트 `CLAUDE.md`가 정본) — 검사 1-c·5·6·7·8·9·10·11·12 에 위반을 심어 붉어지는지 실측
-scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (48 + 뮤테이션 1) — 문서 골격만 심는가 · settings.json 병합 · 1.x 잔재의 **해시 분류와 불간섭** · 소유권 보존
+scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (단언 수는 루트 `CLAUDE.md`가 정본) — 문서 골격만 심는가 · settings.json 병합 · 1.x 잔재의 **해시 분류와 불간섭** · 소유권 보존 · 팀원 설치 안내
 scripts/test-hooks.sh            # 플러그인 훅 회귀 fixture (12 + 뮤테이션 3) — 키트 표식이 있는 저장소만 판정하는가 · 하위 디렉토리 세션·MDM_PROJECT_ROOT · 마커가 있을 때(GNU stat)
 scripts/test-launcher.sh         # bin/mdm 런처 회귀 fixture (15 + 뮤테이션 1) — 분기표(스텁 엔진) · 실제 엔진 · 제품 CI 양식의 실행 줄 · 링크 경유
 ```

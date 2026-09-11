@@ -2,7 +2,7 @@
   "name": "mdm",
   "displayName": "my_dev_method dev-kit",
   "description": "AI 개발 하네스 — 계획 도입(adopt)·계획 작성(plan)·준비도 판정(ready)·정합성 검사와 독립 리뷰(review)·사이클 종료·오류 학습을 커맨드·서브에이전트·훅·검사 엔진으로 강제한다. 제품 저장소에는 /mdm:init 으로 문서 골격만 심는다.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "Jiseok (JIM00N)",
     "url": "https://github.com/JIM00N/my_dev_method"

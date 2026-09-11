@@ -1,6 +1,6 @@
 # my_dev_method — AI 개발 하네스
 
-**V2.0.0 · 계획부터 구현, 검증, 다음 세션 인계까지 연결하는 dev-kit — Claude Code 플러그인 `mdm`**
+**V2.0.1 · 계획부터 구현, 검증, 다음 세션 인계까지 연결하는 dev-kit — Claude Code 플러그인 `mdm`**
 
 AI가 코드를 만드는 동안 요구사항과 설계가 바뀌면, 이전의 ‘준비 완료’나 ‘테스트 통과’는 더 이상 현재 작업의 근거가 아닐 수 있습니다. 이 하네스는 **요구사항 → Story → 계약 입력 → 준비 판정 → 실행 증거**를 연결해 그 차이를 검사합니다.
 
@@ -63,9 +63,19 @@ Claude Code(플러그인 지원판)에서 커맨드·훅·서브에이전트를 
 
 ### 1. 플러그인을 설치하고 제품 저장소를 초기화합니다
 
+Claude Code에서 쓰려면 이 저장소를 클론할 필요가 없습니다. 아래 명령을 실행하면 Claude Code가 저장소를 직접 받아 옵니다. 여기서 말하는 마켓플레이스는 공개 스토어가 아니라 이 저장소 안의 목록 파일([marketplace.json](.claude-plugin/marketplace.json))이고, 별도 등록이나 심사는 없습니다.
+
+Claude Code 안에서:
+
 ```text
 /plugin marketplace add JIM00N/my_dev_method
 /plugin install mdm@my-dev-method
+```
+
+터미널에서 한 줄로:
+
+```bash
+claude plugin marketplace add JIM00N/my_dev_method && claude plugin install mdm@my-dev-method
 ```
 
 제품 저장소에서 Claude Code를 연 채로:
@@ -74,7 +84,7 @@ Claude Code(플러그인 지원판)에서 커맨드·훅·서브에이전트를 
 /mdm:init
 ```
 
-`CLAUDE.md`·`AGENTS.md`·`docs/`·`.github/workflows/mdm-check.yml`이 생기고 `.claude/settings.json`에 플러그인이 프로젝트 범위로 등록됩니다. 심은 `CLAUDE.md` 첫 줄 스탬프는 `dev-kit v2.0.0`입니다. 대상에 `CLAUDE.md` 또는 `docs/`가 이미 있으면 신규 설치가 중단됩니다(`--upgrade`). 원본 저장소를 받아 터미널에서 하려면 `bash plugins/mdm/scripts/init-project.sh /path/to/product-repo`입니다. 소유권과 1.x 이관은 [플러그인 안내](plugins/mdm/README.md)를 따릅니다.
+`CLAUDE.md`·`AGENTS.md`·`docs/`·`.github/workflows/mdm-check.yml`이 생기고 `.claude/settings.json`에 플러그인이 프로젝트 범위로 등록됩니다. 팀원이 그 저장소를 열어 폴더를 신뢰하면 마켓플레이스는 자동으로 추가됩니다. 플러그인이 설치되지 않았다고 나오면 위의 터미널 한 줄로 설치하고 Claude Code를 다시 시작합니다(Claude Code 2.1.195부터 프로젝트 설정만으로 켠 외부 플러그인은 각자 설치 동의를 받습니다). 심은 `CLAUDE.md` 첫 줄 스탬프는 `dev-kit v2.0.1`입니다. 대상에 `CLAUDE.md` 또는 `docs/`가 이미 있으면 신규 설치가 중단됩니다(`--upgrade`). 원본 저장소를 클론해 두었다면 터미널에서 `bash plugins/mdm/scripts/init-project.sh /path/to/product-repo`로도 됩니다. 소유권과 1.x 이관은 [플러그인 안내](plugins/mdm/README.md)를 따릅니다.
 
 ### 2. 제품 저장소에서 도입을 시작합니다
 
@@ -141,7 +151,7 @@ Lite / Standard / Full [프로파일](plugins/mdm/templates/docs/guides/profiles
 
 **1.x(복사 방식)에서 올라오면** 제품의 `.claude/`에 남은 옛 커맨드·훅·엔진을 설치기가 내용 해시로 분류해 알립니다. 기본으로는 건드리지 않고, `--retire-legacy`를 주면 원본과 같은 파일만 `*.dev-kit-1x-retired`로 물립니다. 상세는 [플러그인 안내](plugins/mdm/README.md)의 「1.x 에서 올라오기」입니다.
 
-V1.0.0은 과거 체크 표시를 새 증거로 자동 승계하지 않습니다. [CHANGELOG](CHANGELOG.md)의 이관 항목을 따라 요구사항 목록 → adopt → Story 등록·의미 비교 → ready → 필요한 verify → handoff 순서로 연결하세요. 버전은 배포본 `CLAUDE.md` 첫 줄의 `dev-kit v2.0.0` 스탬프와 `mdm version`으로 확인합니다.
+V1.0.0은 과거 체크 표시를 새 증거로 자동 승계하지 않습니다. [CHANGELOG](CHANGELOG.md)의 이관 항목을 따라 요구사항 목록 → adopt → Story 등록·의미 비교 → ready → 필요한 verify → handoff 순서로 연결하세요. 버전은 배포본 `CLAUDE.md` 첫 줄의 `dev-kit v2.0.1` 스탬프와 `mdm version`으로 확인합니다.
 
 ## 참고 자료
 

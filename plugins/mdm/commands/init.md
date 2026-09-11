@@ -28,7 +28,8 @@ argument-hint: [--upgrade [--retire-legacy]]
 
 3. 신규 설치였으면 사용자에게 다음을 확인받는다:
    - `CLAUDE.md` 상단 두 줄(제목·한 줄 설명)을 프로젝트 것으로 바꿨는가
-   - `.claude/settings.json` 에 `mdm@my-dev-method` 가 등록됐다 — 세션을 다시 시작해야 훅·커맨드가 잡힌다
+   - `.claude/settings.json` 에 `mdm@my-dev-method` 가 등록됐다 — 이 세션을 다시 시작해야 훅·커맨드가 잡힌다.
+     팀원에게는 출력 4번의 설치 한 줄을 전한다 — 등록만으로 팀원에게 설치된다고 말하지 않는다(실측하지 않은 동작이다)
    - 그다음 진입점은 하나다: **`/mdm:adopt`** (현재 단계 S0)
 
 4. 업그레이드였으면 사용자에게 다음을 보인다:

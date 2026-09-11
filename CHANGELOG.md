@@ -2,6 +2,69 @@
 
 이 파일은 방법론·템플릿·가이드의 변경 이유와 적용 범위를 기록합니다. 제품별 기능 변경은 각 제품 저장소가 기록합니다.
 
+## 2.0.0 — 2026-09-11
+
+키트가 **Claude Code 플러그인**(`plugins/mdm`, 마켓플레이스 `my-dev-method`, 플러그인 ID `mdm@my-dev-method`)이 됩니다.
+1.x 는 `templates/dev-kit/.claude/` 를 제품 저장소에 통째로 복사했고, 그 결과 커맨드·훅·검사 엔진이 제품마다 다른 판으로
+갈라졌으며 `settings.json` 훅 병합·옛 이름 정리가 사람 손에 남았습니다. 2.0.0 부터 실행 장치는 플러그인이 제공하고
+제품에는 지시서와 문서 골격만 심습니다.
+
+### 적용과 양식 변경 (깨지는 변경)
+
+- **저장소 구조:** `templates/dev-kit/` 이 `plugins/mdm/` 으로 옮겨졌습니다. 커맨드·에이전트·훅·스크립트는
+  `plugins/mdm/commands`·`plugins/mdm/agents`·`plugins/mdm/hooks`·`plugins/mdm/scripts`, 제품에 심는 양식은 `plugins/mdm/templates/` 입니다.
+  이 CHANGELOG 의 이전 항목이 적은 `templates/dev-kit/...`·`.claude/scripts/...` 경로는 그 시점의 위치입니다.
+- **이름:** 커맨드는 `/mdm:adopt`·`/mdm:plan`·`/mdm:ready`·`/mdm:stage`·`/mdm:review`·`/mdm:cycle-close`·`/mdm:ingest-errors`,
+  서브에이전트는 `mdm:code-review`·`mdm:error-learning` 입니다. 0.7.0 의 `mdm-` 접두는 파일명에서 사라지고 이름 공간이 그 몫을 합니다.
+- **엔진 호출:** 문서·커맨드의 `.claude/scripts/…` 호출이 런처 `mdm` 으로 통일됩니다 — `mdm check`(정합성 A~J) · `mdm final`(최종 통합) ·
+  `mdm contract …` · `mdm ops …` · `mdm report …` · `mdm init …` · `mdm doctor` · `mdm root` · `mdm version`.
+  플러그인 `bin/` 이 Claude Code 세션의 PATH 에 오릅니다(실측). 제품 루트는 `MDM_PROJECT_ROOT` → `CLAUDE_PROJECT_DIR` → git 루트 → 현재 디렉토리 순으로 정합니다.
+- **설치기:** `scripts/install-kit.sh` 가 `plugins/mdm/scripts/init-project.sh`(`/mdm:init`, `mdm init`)로 옮겨졌습니다(옛 경로는 위임 래퍼).
+  신규 설치는 `CLAUDE.md`·`AGENTS.md`·`docs/`·`.github/workflows/mdm-check.yml`·`.gitignore` 줄을 심고 `.claude/settings.json` 에
+  `extraKnownMarketplaces.my-dev-method`·`enabledPlugins."mdm@my-dev-method"` 를 **프로젝트 범위로 등록**합니다. `.claude/` 키트 파일은 복사하지 않습니다.
+  `settings.json` 은 다른 키·다른 등록을 보존한 채 두 키만 더하고, 깨진 JSON 은 건드리지 않고 실패합니다. `.dev-kit` 사이드카는 없어졌습니다.
+- **1.x 에서 올라오기:** `mdm init --upgrade` 가 제품 `.claude/` 의 옛 키트 파일을 **내용 해시**(`plugins/mdm/scripts/legacy-manifest.tsv`,
+  0.3.0~1.0.0 각 판의 sha256)로 분류해 알립니다 — 원본과 같음 / 이름만 같고 내용이 다름 / 키트가 쓴 적 없는 이름. 기본은 불간섭입니다.
+  `--retire-legacy` 를 주면 「같음」만 `*.dev-kit-1x-retired` 로 개칭하고 그 훅의 `settings.json` 등록만 뺍니다.
+  「다름」은 어느 경우에도 건드리지 않습니다. 0.7.0 결정(설치기는 옛 이름을 건드리지 않는다)은 기본 동작으로 남고,
+  해시가 같은 파일의 개칭만 옵트인으로 엽니다 — 2026-09-11 사용자 승인.
+- **제품 CI 양식:** 원본 저장소를 `MDM_KIT_REF`(= `v<플러그인 버전>` 태그) 로 받아 `plugins/mdm/bin/mdm final` 을 돌립니다.
+  기존 제품의 `mdm-check.yml` 은 보존됩니다. 그 파일에 핀이 없으면(1.x 양식) 설치기가 2.0.0 양식을 `mdm-check.yml.dev-kit-new` 사이드카로 두고
+  교체를 안내합니다 — 1.x 양식은 옛 엔진 경로를 부르므로 `--retire-legacy` **전에** 바꿉니다. `mdm doctor` 가 `ci_pin`·`ci_pin_matches`
+  (핀 없는 CI 는 `false`)·`ci_legacy` 로 핀과 플러그인 버전을 대조합니다 — 진단이며 검사를 실패시키지 않습니다.
+- **훅:** `hooks/hooks.json` 으로 등록됩니다. 플러그인 훅은 켜진 모든 저장소에서 돌기 때문에, 키트 표식 `docs/status/STATUS.md` 가 없는 저장소에서는
+  판정하지 않고 통과합니다(표식은 git 최상위까지 위로 찾습니다)(1.x 에서 훅 파일이 키트 프로젝트에만 있던 것과 같은 범위). 표식을 지우면 꺼집니다 — 1.x 에서 훅 파일을 지우면 꺼지던 것과 같은 신뢰 수준입니다.
+- **정책 해시:** 준비 판정에 들어가는 엔진 정책 파일 해시(`mdm-contract.py`·`mdm_model.py`·`mdm_operations.py`)가 플러그인 파일에서 계산됩니다.
+  파일 내용이 바뀌었으므로 기존 준비 판정은 낡습니다 — `mdm contract inspect` → `/mdm:ready` 로 다시 판정합니다 (1.0.0 이관 규칙과 같습니다).
+- **python3 는 설치기에도 필요**합니다 (`settings.json` 등록·버전 대조).
+
+### 이 저장소의 검사
+
+- `scripts/check-docs.sh` 검사 11 이 「`mdm-` 접두 강제」에서 「플러그인 이름 공간 정합」으로 바뀝니다 — 파일명에 접두 없음,
+  `/mdm:<이름>`·`mdm:<이름>` 참조 실재, 제품 양식·커맨드·에이전트에 제품에 없는 `.claude/` 하위 경로(commands·agents·hooks·scripts)·옛 이름 없음.
+  검사 12 가 새로 생깁니다 — `plugin.json`·`templates/CLAUDE.md` 스탬프·`marketplace.json`·제품 CI 핀의 버전 일치, `hooks.json` 훅 실재·실행 권한, `bin/mdm`.
+  `scripts/test-docs-check.sh` 가 두 검사를 덮습니다(단언 47줄).
+- `scripts/test-install-upgrade.sh` 가 새 설치기를 잽니다(49 단언) — 문서 골격만 심는가, `settings.json` 병합, 1.x 잔재의 해시 분류와 불간섭·옵트인 개칭, 소유권 보존, 배포본 무결성.
+- `scripts/test-hooks.sh` 가 새로 생깁니다(15 단언) — 훅이 키트 표식 있는 저장소만 판정하는가, 하위 디렉토리 세션·마커 처리까지, 뮤테이션으로 게이트를 잽니다.
+- `scripts/test-launcher.sh` 가 새로 생깁니다(16 단언) — `bin/mdm` 분기표·실제 엔진·제품 CI 양식의 실행 줄·심볼릭 링크 경유. CI 는 9종이 됩니다.
+- `scripts/test-consistency.sh`·`test-report.sh`·`scripts/tests/*.py` 는 엔진을 제품 fixture **밖**에 두고 `MDM_PROJECT_ROOT` 로 제품을 가리킵니다.
+  파이썬 회귀에 CI 핀 대조·제품 루트 판정·정책 해시 출처 세 건이 더해집니다(41 GREEN).
+### 커밋 전 독립 리뷰 1회전에서 고친 것
+
+- **훅의 제품 루트**: 세 훅이 공용 `hooks/lib-root.sh` 로 `MDM_PROJECT_ROOT` → `CLAUDE_PROJECT_DIR` → 현재 디렉토리에서 출발해
+  표식을 git 최상위까지 위로 찾습니다. 하위 디렉토리에서 연 세션(그때 `CLAUDE_PROJECT_DIR` 는 그 하위 경로 — 실측)도 막힙니다.
+- **Stop 훅의 반복 차단 방지 마커**: GNU `stat -f` 가 stdout 에 파일시스템 블록을 찍어 마커가 영구히 남던 결함(0.3.0 부터, Linux)을 고쳤습니다.
+- **1.x CI**: 핀 없는 CI 옆에 양식 사이드카를 두고, 올릴 핀이 없는데 「올린다」고 하던 안내를 조건부로 바꿨습니다. `doctor` 에 `ci_legacy`.
+- **설치기 실패 경로**: 가이드 복사 실패를 삼키고 「완료」를 찍던 루프 · 매니페스트 부재의 조용한 0건 · 객체 아닌 settings 값 덮어쓰기 ·
+  settings 링크 끊김 · `.gitignore` 쓰기 실패를 전부 멈추게 했습니다. settings·`.gitignore` 쓰기는 문서를 심기 **전**에 합니다.
+- **`/mdm:init`**: 설치가 중단되면 에이전트가 스스로 `--upgrade` 로 다시 돌리지 않고 사용자 답을 받습니다.
+- **런처**: 심볼릭 링크로 PATH 에 올려도 돕니다.
+- **죽은 회귀 테스트**: 정책 해시 출처 테스트가 `if __name__` 블록 안에 있어 수집되지 않았습니다. 클래스로 옮기고 공허한 단언을 바꿨습니다.
+
+- 릴리스 절차: 이 항목을 커밋한 뒤 `v2.0.0` 태그를 만들어 푸시합니다. 제품 CI 양식과 `AGENTS.md` 는 그 태그를 clone 하므로 태그 전에는 실패합니다.
+- 정직한 한계: 플러그인이 실제 Claude Code 세션에서 로드되는 것(`${CLAUDE_PLUGIN_ROOT}` 치환·`bin/` PATH·훅 실행)은 개발 중 한 번 실측했고
+  CI 는 재현하지 않습니다. `claude plugin validate` 는 로컬에서 통과했습니다.
+
 ## 1.0.0 — 2026-09-09
 
 최근 푸시된 구현(`5088617`)을 V1.0.0의 기능 기준으로 지정합니다. 배포 스탬프와 설치 표시를 1.0.0으로 맞추고,

@@ -10,7 +10,8 @@ import sys
 import tempfile
 import unittest
 
-KIT = Path(__file__).resolve().parents[2] / 'templates/dev-kit'
+PLUGIN = Path(__file__).resolve().parents[2] / 'plugins/mdm'
+KIT = PLUGIN / 'templates'          # 제품에 심는 양식 (CLAUDE.md · AGENTS.md · docs/ · .github/)
 SLOTS = ['state', 'authorization', 'rules', 'data', 'exceptions', 'presentation',
          'checks', 'preconditions', 'trigger', 'action', 'result', 'acceptance']
 
@@ -19,9 +20,14 @@ class Contracts(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
-        shutil.copytree(KIT / '.claude/scripts', self.root / '.claude/scripts',
-                        ignore=shutil.ignore_patterns('__pycache__'))
+        # 2.0.0: 엔진은 제품 밖(플러그인)에 있다. 사본을 제품 fixture 의 형제 디렉토리에 두고 MDM_PROJECT_ROOT 로 제품을 가리킨다.
+        self.root = Path(self.tmp.name) / 'product'
+        self.root.mkdir()
+        # 플러그인 전체를 복사한다 — plugin.json(버전)·templates 가 scripts 의 형제여야 doctor·init 이 실제 배치대로 돈다.
+        self.plugin = Path(self.tmp.name) / 'plugin'
+        shutil.copytree(PLUGIN, self.plugin, ignore=shutil.ignore_patterns('__pycache__'))
+        self.engine = self.plugin / 'scripts'
+        self.env = dict(os.environ, MDM_PROJECT_ROOT=str(self.root))
         self.put('docs/spec/source-map.md', '''# source-map
 ## 2. 요구사항 매핑표
 | ID | 출처 | 화면 | 준비 | 마일스톤 | 사이클 | 조건 수 | 테스트 | 상태 | 재검토 |
@@ -51,8 +57,8 @@ class Contracts(unittest.TestCase):
         return p
 
     def cli(self, *args, rc=0):
-        p = subprocess.run([sys.executable, str(self.root / '.claude/scripts/mdm-contract.py'), *args],
-                           cwd=self.root, text=True, capture_output=True)
+        p = subprocess.run([sys.executable, str(self.engine / 'mdm-contract.py'), *args],
+                           cwd=self.root, text=True, capture_output=True, env=self.env)
         self.assertEqual(p.returncode, rc, p.stdout + p.stderr)
         return p.stdout
 
@@ -72,7 +78,7 @@ class Contracts(unittest.TestCase):
                  '--comparison', 'comparison.json', '--reviewed-by', 'user:fixture')
 
     def model(self):
-        path = self.root / '.claude/scripts/mdm_model.py'
+        path = self.engine / 'mdm_model.py'
         spec = importlib.util.spec_from_file_location('fixture_model', path)
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
@@ -225,14 +231,14 @@ class Contracts(unittest.TestCase):
         self.setup_story()
         self.ready()
         def shell(rc):
-            p = subprocess.run(['bash', str(self.root / '.claude/scripts/check-consistency.sh')],
-                               cwd=self.root, text=True, capture_output=True)
+            p = subprocess.run(['bash', str(self.engine / 'check-consistency.sh')],
+                               cwd=self.root, text=True, capture_output=True, env=self.env)
             self.assertEqual(p.returncode, rc, p.stdout + p.stderr)
         shell(0)
         self.put('docs/spec/domain.md', 'Changed permission')
         shell(1)
-        p = subprocess.run([sys.executable, str(self.root / '.claude/scripts/report.py'), 'ready'],
-                           cwd=self.root, text=True, capture_output=True)
+        p = subprocess.run([sys.executable, str(self.engine / 'report.py'), 'ready'],
+                           cwd=self.root, text=True, capture_output=True, env=self.env)
         self.assertEqual(p.returncode, 0, p.stderr)
         html = next((self.root / 'docs/reports').glob('ready-*.html')).read_text()
         self.assertIn('재검토 필요', html)
@@ -244,14 +250,15 @@ class Contracts(unittest.TestCase):
     def test_installer_preserves_evidence_on_upgrade(self):
         target = self.root / 'product'
         target.mkdir()
-        installer = KIT.parents[1] / 'scripts/install-kit.sh'
+        installer = PLUGIN / 'scripts/init-project.sh'
         for mode in [[], ['--upgrade']]:
             p = subprocess.run(['bash', str(installer), str(target), *mode], text=True, capture_output=True)
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-            for name in ['mdm-contract.py', 'mdm_model.py']:
-                deployed = target / '.claude/scripts' / name
-                self.assertEqual(deployed.read_bytes(), (KIT / '.claude/scripts' / name).read_bytes())
-                self.assertTrue(os.access(deployed, os.X_OK))
+            # 2.0.0: 엔진은 제품에 복사되지 않는다 — 플러그인 등록만 남는다.
+            self.assertFalse((target / '.claude/scripts').exists())
+            settings = json.loads((target / '.claude/settings.json').read_text())
+            self.assertTrue(settings['enabledPlugins']['mdm@my-dev-method'])
+            self.assertEqual(settings['extraKnownMarketplaces']['my-dev-method']['source']['repo'], 'JIM00N/my_dev_method')
             marker = target / 'docs/evidence/readiness/keep.json'
             config = target / 'docs/meta/project.json'
             if not mode:
@@ -314,6 +321,19 @@ class Contracts(unittest.TestCase):
         first = p.read_bytes()
         self.cli('render')
         self.assertEqual(p.read_bytes(), first)
+
+
+    def test_policy_hash_comes_from_engine_not_product(self):
+        # 2.0.0: 준비 판정의 정책 해시는 엔진(플러그인) 파일에서 계산한다.
+        # 엔진이 바뀌면 판정이 낡아야 하고, 제품 쪽의 같은 이름 파일은 판정에 끼어들면 안 된다.
+        self.setup_story()
+        first = json.loads(self.cli('inspect', 'ST-001'))
+        self.assertEqual(set(first['inputs']['policy']), {'mdm-contract.py', 'mdm_model.py', 'mdm_operations.py'})
+        self.put('.claude/scripts/mdm_operations.py', '# 1.x 가 제품에 복사해 두던 자리 — 판정에 쓰이면 안 된다\n')
+        self.assertEqual(json.loads(self.cli('inspect', 'ST-001'))['fingerprint'], first['fingerprint'])
+        policy = self.engine / 'mdm_operations.py'
+        policy.write_text(policy.read_text(encoding='utf-8') + '\n# policy changed\n', encoding='utf-8')
+        self.assertNotEqual(json.loads(self.cli('inspect', 'ST-001'))['fingerprint'], first['fingerprint'])
 
 
 if __name__ == '__main__':

@@ -55,17 +55,17 @@
 
 ### 3.1. 확인 근거
 
-- [계획 작성 가이드](../templates/dev-kit/docs/guides/plan.md): 계획 깊이, 권한, 먼저 만들 묶음, 상세 설계와의 경계.
-- [공통 인터뷰 규칙](../templates/dev-kit/docs/guides/index.md): 묶어 묻기, 의존 질문의 다음 라운드 이관, 사실 탐색.
-- [계획 실행 커맨드](../templates/dev-kit/.claude/commands/mdm-plan.md): 질문 종료 동의, 계획 리포트 승인, 도입으로 이관.
-- [준비도 점검](../templates/dev-kit/docs/guides/ready.md): 12개 슬롯, AI 초안, 사용자 판단, 크기 판정.
-- [Story 양식](../templates/dev-kit/docs/plan/stories/ST-000-template.md): 준비 슬롯, 영향 범위, 서비스 권한, 검증 방법.
-- [도메인 설계](../templates/dev-kit/docs/guides/S2-domain.md): 데이터, 상태, 권한, 예외, 비즈니스 규칙.
-- [안정성 설계](../templates/dev-kit/docs/guides/S4-architecture.md): 인증 만료, 중복 실행, 호출 한도, 실패, 백업.
-- [계약 근거와 실행 증거](../templates/dev-kit/docs/guides/contract-evidence.md): 준비 입력 범위와 파일 단위 무효화.
-- [변경 운영](../templates/dev-kit/docs/guides/operating-loop.md): 영향 분류, 의미 비교, 인계, 파일럿 측정.
-- [의사결정 모드](../templates/dev-kit/docs/guides/decision-modes.md): 학습·실행 모드와 기본 결정 재사용.
-- [계획 검사 코드](../templates/dev-kit/.claude/scripts/check-plan.py): 사양 계층·필수 칸·권한 표 검사.
+- [계획 작성 가이드](../plugins/mdm/templates/docs/guides/plan.md): 계획 깊이, 권한, 먼저 만들 묶음, 상세 설계와의 경계.
+- [공통 인터뷰 규칙](../plugins/mdm/templates/docs/guides/index.md): 묶어 묻기, 의존 질문의 다음 라운드 이관, 사실 탐색.
+- [계획 실행 커맨드](../plugins/mdm/commands/plan.md): 질문 종료 동의, 계획 리포트 승인, 도입으로 이관.
+- [준비도 점검](../plugins/mdm/templates/docs/guides/ready.md): 12개 슬롯, AI 초안, 사용자 판단, 크기 판정.
+- [Story 양식](../plugins/mdm/templates/docs/plan/stories/ST-000-template.md): 준비 슬롯, 영향 범위, 서비스 권한, 검증 방법.
+- [도메인 설계](../plugins/mdm/templates/docs/guides/S2-domain.md): 데이터, 상태, 권한, 예외, 비즈니스 규칙.
+- [안정성 설계](../plugins/mdm/templates/docs/guides/S4-architecture.md): 인증 만료, 중복 실행, 호출 한도, 실패, 백업.
+- [계약 근거와 실행 증거](../plugins/mdm/templates/docs/guides/contract-evidence.md): 준비 입력 범위와 파일 단위 무효화.
+- [변경 운영](../plugins/mdm/templates/docs/guides/operating-loop.md): 영향 분류, 의미 비교, 인계, 파일럿 측정.
+- [의사결정 모드](../plugins/mdm/templates/docs/guides/decision-modes.md): 학습·실행 모드와 기본 결정 재사용.
+- [계획 검사 코드](../plugins/mdm/scripts/check-plan.py): 사양 계층·필수 칸·권한 표 검사.
 - [파일럿 측정 양식](../examples/first-pilot/metrics-template.json), [파일럿 운영 안내](../examples/first-pilot/README.md).
 
 Manyfast 비교는 저장소의 로컬 참고 이미지에서 확인한 범위다. 서비스 전체나 최신 기능에 대한 평가는 아니다.
@@ -263,7 +263,7 @@ Manyfast 비교는 저장소의 로컬 참고 이미지에서 확인한 범위�
 
 ### 9.3. 준비도 승인의 변경 방향
 
-기존 `/mdm-ready`는 초안 전체를 사용자에게 확인받는 흐름이다.
+기존 `/mdm:ready`는 초안 전체를 사용자에게 확인받는 흐름이다.
 제안은 기존 승인 내용의 단순 재현과 새로운 판단을 구분하는 것이다.
 
 - 기존 승인과 일치하고 입력이 유효함: 연결·일관성 검증 후 사용.
@@ -561,30 +561,30 @@ AI의 처리:
 
 | 대상 | 계획된 변경 | 확인할 연결 |
 |---|---|---|
-| [공통 가이드](../templates/dev-kit/docs/guides/index.md) | 질문 전 사전 작업, 조건부 묶음, 자연어 우선, 단계 진행 확인 축소 | 인터뷰 기본 프롬프트와 각 단계의 참조 |
-| [계획 가이드](../templates/dev-kit/docs/guides/plan.md) | 흐름 예행 검토, 검토 대상 분류, 구체적 초안 선작성, 중복 확인 제거 | 질문 종료 조건·계획 승인·상세 설계 경계 |
-| [계획 커맨드](../templates/dev-kit/.claude/commands/mdm-plan.md) | 실제 실행 순서를 새 질문 절차로 정렬 | 가이드와 다른 승인 단계가 남지 않는지 |
-| [문제 정의 가이드](../templates/dev-kit/docs/guides/S1-problem.md) | 역할·범위·권한을 연결된 제안으로 수집 | 공통 인터뷰 규칙과 단계 순서 |
-| [도메인 가이드](../templates/dev-kit/docs/guides/S2-domain.md) | 계획에서 확보한 데이터·상태·권한 결정을 재사용 | 새 결정을 묻는 조건·소유권 |
-| [의사결정 모드](../templates/dev-kit/docs/guides/decision-modes.md) | 결정에 필요한 설명 우선, 기존 선호·기본 결정 재사용 | 긴 학습 절차를 자동 요구하는 규칙 |
-| [단계 커맨드](../templates/dev-kit/.claude/commands/mdm-stage.md) | 단계 이동만으로 인터뷰·승인을 재시작하지 않음 | 각 단계 DoD와 사용자 확인 조건 |
-| [도입 가이드](../templates/dev-kit/docs/guides/S0-adopt.md)·[도입 커맨드](../templates/dev-kit/.claude/commands/mdm-adopt.md) | 기존 계획의 충분한 결정을 재사용, 차이·갭만 보고 | 외부 계획 형식 보존·동기화 승인 근거 |
-| [준비도 가이드](../templates/dev-kit/docs/guides/ready.md)·[준비 커맨드](../templates/dev-kit/.claude/commands/mdm-ready.md) | 기존 결정·새 선택·충돌을 구분, 사례에서 슬롯 근거 연결 | 판정 기록과 기존 승인 재사용 |
-| [Story 양식](../templates/dev-kit/docs/plan/stories/ST-000-template.md)·[사이클 양식](../templates/dev-kit/docs/plan/cycles/C00-template.md) | 동작 사례 인용, 계약과 운영 상태 분리 | Lite에서도 같은 판단 범위를 유지 |
-| [매핑 양식](../templates/dev-kit/docs/spec/source-map.md) | 표시명·근거 연결, 필요한 경우 적용 항목 보강 | 내부 ID와 기존 참조 보존 |
-| [계획 양식](../templates/dev-kit/docs/upstream/plan.md) | 실제 질문·사례·표시 규칙을 작성 골격에 반영 | 계획 검사와 형식 호환 |
-| [상태 양식](../templates/dev-kit/docs/status/STATUS.md) | 자연어 작업명과 다음 행동 중심의 예시 | 내부 추적 ID는 유지 |
-| [리포트 생성기](../templates/dev-kit/.claude/scripts/report.py) | 이름 우선, 새 결정 중심 요약, ID·원문은 상세 | 누락·중복 이름, HTML 이스케이프, 링크 |
-| [계약 엔진](../templates/dev-kit/.claude/scripts/mdm-contract.py)·[공통 모델](../templates/dev-kit/.claude/scripts/mdm_model.py) | 사례·근거 재사용, 계약과 상태 입력 경계 | 기록 버전·무효화·기존 데이터 이관 |
-| [운영 엔진](../templates/dev-kit/.claude/scripts/mdm_operations.py)·[CLI](../templates/dev-kit/.claude/scripts/mdm-ops.py) | 읽기 쉬운 영향 설명·측정 확장 | 구조화된 내부 출력과 사용자용 요약 구분 |
-| [계약 가이드](../templates/dev-kit/docs/guides/contract-evidence.md)·[운영 가이드](../templates/dev-kit/docs/guides/operating-loop.md) | 새 근거·승인 재사용·재판정 범위·측정 방식 설명 | 코드가 실제 보장하는 범위와 일치 |
-| [계획 검사](../templates/dev-kit/.claude/scripts/check-plan.py)·[정합성 진입점](../templates/dev-kit/.claude/scripts/check-consistency.sh) | 채택한 구조의 참조·누락 검사 | 자연어 충분함을 기계 보장으로 과장하지 않음 |
-| [구축 가이드](../templates/dev-kit/docs/guides/S6-build.md)·[사이클 종료 커맨드](../templates/dev-kit/.claude/commands/mdm-cycle-close.md) | 결과·검수 중심 보고와 중복 확인 정리 | 실제 검수와 단순 진행 확인 구분 |
-| [제품 AGENTS](../templates/dev-kit/AGENTS.md)·[제품 CLAUDE](../templates/dev-kit/CLAUDE.md) | 변경된 공통 규칙의 진입점 정렬 | 에이전트별로 다른 승인·질문 규칙이 남지 않음 |
-| [프로파일 가이드](../templates/dev-kit/docs/guides/profiles.md) | 문서량과 필수 판단 범위 정렬 | Lite를 검토 생략의 근거로 쓰지 않음 |
-| [설치기](../scripts/install-kit.sh) | 새 구조가 생긴 경우 업그레이드 안내·호환 처리 | 제품 소유 계획·결정·증거를 덮어쓰지 않음 |
+| [공통 가이드](../plugins/mdm/templates/docs/guides/index.md) | 질문 전 사전 작업, 조건부 묶음, 자연어 우선, 단계 진행 확인 축소 | 인터뷰 기본 프롬프트와 각 단계의 참조 |
+| [계획 가이드](../plugins/mdm/templates/docs/guides/plan.md) | 흐름 예행 검토, 검토 대상 분류, 구체적 초안 선작성, 중복 확인 제거 | 질문 종료 조건·계획 승인·상세 설계 경계 |
+| [계획 커맨드](../plugins/mdm/commands/plan.md) | 실제 실행 순서를 새 질문 절차로 정렬 | 가이드와 다른 승인 단계가 남지 않는지 |
+| [문제 정의 가이드](../plugins/mdm/templates/docs/guides/S1-problem.md) | 역할·범위·권한을 연결된 제안으로 수집 | 공통 인터뷰 규칙과 단계 순서 |
+| [도메인 가이드](../plugins/mdm/templates/docs/guides/S2-domain.md) | 계획에서 확보한 데이터·상태·권한 결정을 재사용 | 새 결정을 묻는 조건·소유권 |
+| [의사결정 모드](../plugins/mdm/templates/docs/guides/decision-modes.md) | 결정에 필요한 설명 우선, 기존 선호·기본 결정 재사용 | 긴 학습 절차를 자동 요구하는 규칙 |
+| [단계 커맨드](../plugins/mdm/commands/stage.md) | 단계 이동만으로 인터뷰·승인을 재시작하지 않음 | 각 단계 DoD와 사용자 확인 조건 |
+| [도입 가이드](../plugins/mdm/templates/docs/guides/S0-adopt.md)·[도입 커맨드](../plugins/mdm/commands/adopt.md) | 기존 계획의 충분한 결정을 재사용, 차이·갭만 보고 | 외부 계획 형식 보존·동기화 승인 근거 |
+| [준비도 가이드](../plugins/mdm/templates/docs/guides/ready.md)·[준비 커맨드](../plugins/mdm/commands/ready.md) | 기존 결정·새 선택·충돌을 구분, 사례에서 슬롯 근거 연결 | 판정 기록과 기존 승인 재사용 |
+| [Story 양식](../plugins/mdm/templates/docs/plan/stories/ST-000-template.md)·[사이클 양식](../plugins/mdm/templates/docs/plan/cycles/C00-template.md) | 동작 사례 인용, 계약과 운영 상태 분리 | Lite에서도 같은 판단 범위를 유지 |
+| [매핑 양식](../plugins/mdm/templates/docs/spec/source-map.md) | 표시명·근거 연결, 필요한 경우 적용 항목 보강 | 내부 ID와 기존 참조 보존 |
+| [계획 양식](../plugins/mdm/templates/docs/upstream/plan.md) | 실제 질문·사례·표시 규칙을 작성 골격에 반영 | 계획 검사와 형식 호환 |
+| [상태 양식](../plugins/mdm/templates/docs/status/STATUS.md) | 자연어 작업명과 다음 행동 중심의 예시 | 내부 추적 ID는 유지 |
+| [리포트 생성기](../plugins/mdm/scripts/report.py) | 이름 우선, 새 결정 중심 요약, ID·원문은 상세 | 누락·중복 이름, HTML 이스케이프, 링크 |
+| [계약 엔진](../plugins/mdm/scripts/mdm-contract.py)·[공통 모델](../plugins/mdm/scripts/mdm_model.py) | 사례·근거 재사용, 계약과 상태 입력 경계 | 기록 버전·무효화·기존 데이터 이관 |
+| [운영 엔진](../plugins/mdm/scripts/mdm_operations.py)·[CLI](../plugins/mdm/scripts/mdm-ops.py) | 읽기 쉬운 영향 설명·측정 확장 | 구조화된 내부 출력과 사용자용 요약 구분 |
+| [계약 가이드](../plugins/mdm/templates/docs/guides/contract-evidence.md)·[운영 가이드](../plugins/mdm/templates/docs/guides/operating-loop.md) | 새 근거·승인 재사용·재판정 범위·측정 방식 설명 | 코드가 실제 보장하는 범위와 일치 |
+| [계획 검사](../plugins/mdm/scripts/check-plan.py)·[정합성 진입점](../plugins/mdm/scripts/check-consistency.sh) | 채택한 구조의 참조·누락 검사 | 자연어 충분함을 기계 보장으로 과장하지 않음 |
+| [구축 가이드](../plugins/mdm/templates/docs/guides/S6-build.md)·[사이클 종료 커맨드](../plugins/mdm/commands/cycle-close.md) | 결과·검수 중심 보고와 중복 확인 정리 | 실제 검수와 단순 진행 확인 구분 |
+| [제품 AGENTS](../plugins/mdm/templates/AGENTS.md)·[제품 CLAUDE](../plugins/mdm/templates/CLAUDE.md) | 변경된 공통 규칙의 진입점 정렬 | 에이전트별로 다른 승인·질문 규칙이 남지 않음 |
+| [프로파일 가이드](../plugins/mdm/templates/docs/guides/profiles.md) | 문서량과 필수 판단 범위 정렬 | Lite를 검토 생략의 근거로 쓰지 않음 |
+| [설치기](../plugins/mdm/scripts/init-project.sh) | 새 구조가 생긴 경우 업그레이드 안내·호환 처리 | 제품 소유 계획·결정·증거를 덮어쓰지 않음 |
 | [파일럿 양식](../examples/first-pilot/metrics-template.json)·[운영 안내](../examples/first-pilot/README.md) | 계획 시간·왕복·설명 재요청·반복 질문 추가 | 기존 측정값 의미와 버전 호환 |
-| [소개 문서](../README.md)·[키트 안내](../templates/dev-kit/README.md)·[시작 가이드](../guides/getting-started.md) | 최종 동작과 실제 보장 범위로 설명 갱신 | 미구현 제안을 제공 기능으로 소개하지 않음 |
+| [소개 문서](../README.md)·[키트 안내](../plugins/mdm/README.md)·[시작 가이드](../guides/getting-started.md) | 최종 동작과 실제 보장 범위로 설명 갱신 | 미구현 제안을 제공 기능으로 소개하지 않음 |
 
 최종 구현에서 변경한 범위에 맞춰 기존 워크플로 아티팩트 설명도 갱신한다.
 이 문서 작성 단계에서는 외부 게시나 배포를 수행하지 않는다.

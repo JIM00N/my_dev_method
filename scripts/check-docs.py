@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check-docs.sh 의 문서·에이전트·셸 검사 (1-c · 5 · 6 · 7 · 8 · 9 · 10 · 11).
+"""check-docs.sh 의 문서·에이전트·셸 검사 (1-c · 5 · 6 · 7 · 8 · 9 · 10 · 11 · 12).
 
 **왜 bash+grep 이 아닌가.** 로케일 때문이다 — `[^「]` 같은 부정 문자클래스는 C/POSIX 로케일에서
 **바이트 클래스**가 되어 `—`(E2 80 94)·`…`(E2 80 A6)·`가`(EA B0 80) 안의 바이트 `0x80` 에 걸린다.
@@ -18,7 +18,10 @@ import re
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-KIT = os.path.join(ROOT, "templates", "dev-kit")
+PLUGIN = os.path.join(ROOT, "plugins", "mdm")          # 플러그인 정본 (커맨드·에이전트·훅·엔진·제품 양식)
+KIT = os.path.join(PLUGIN, "templates")                 # 제품에 심는 문서 — `docs/…` 참조의 기준
+COMMANDS = os.path.join(PLUGIN, "commands")
+PLUGIN_AGENTS = os.path.join(PLUGIN, "agents")
 AGENTS = os.path.join(ROOT, ".claude", "agents")
 KITREVIEW = os.path.join(ROOT, ".claude", "commands", "mdm-kit-review.md")
 
@@ -61,7 +64,7 @@ def repo_docs():
     out = []
     for dp, dns, fns in os.walk(ROOT):
         dns[:] = [d for d in dns if d not in (".git", "manyfast_reference", "node_modules")]
-        if dp == KIT or dp.startswith(KIT + os.sep):
+        if dp == PLUGIN or dp.startswith(PLUGIN + os.sep):
             continue
         for fn in fns:
             if fn.endswith(".md"):
@@ -75,8 +78,9 @@ def repo_docs():
 
 
 def kit_docs():
+    """플러그인 안의 모든 md — 제품 양식(templates)·커맨드·에이전트·README."""
     out = []
-    for dp, dns, fns in os.walk(KIT):
+    for dp, dns, fns in os.walk(PLUGIN):
         dns[:] = [d for d in dns if d != ".git"]
         for fn in fns:
             if fn.endswith(".md"):
@@ -96,12 +100,16 @@ PLACEHOLDER = re.compile(r"[<>*…]|C00-이름|ADR-000")
 # 무확장자이고(#117), 한글이 섞인 경로도 있다(#148). 대신 **저장소 최상위 이름으로 시작하는
 # 슬래시 포함 토큰**을 대상으로 삼는다. 경로는 이 저장소 기준이거나 키트 기준이면 통과한다 —
 # 루트 문서는 둘 다 인용한다(`scripts/…`는 이 저장소, `docs/…`는 제품 저장소가 가질 키트 문서).
-TOPS = (".githooks/", ".claude/", ".github/", "scripts/", "docs/", "templates/",
+TOPS = (".githooks/", ".claude/", ".claude-plugin/", ".github/", "scripts/", "docs/", "plugins/",
         "guides/", "examples/")
 # 설치·실행 시점에 **생성되는** 산출물 — 이 저장소에 없는 것이 정상이다.
 # 목록으로 좁게 둔다: 넓히면 진짜 깨진 참조가 이 구멍으로 샌다.
-GENERATED = ("settings.json.dev-kit", "CLAUDE.md.dev-kit-new", "docs/reports/",
-             "docs/upstream/manifest.tsv")
+GENERATED = ("CLAUDE.md.dev-kit-new", "docs/reports/", "docs/upstream/manifest.tsv", ".dev-kit-1x-retired",
+             ".claude/settings.json")   # 제품의 설정 파일 — `mdm init` 이 플러그인 등록을 써 넣는다. 이 저장소에는 없다
+# 2.0.0 이 옮긴 옛 경로 — **이력 문서(CHANGELOG·docs/history)에서만** 살아 있는 참조로 인정한다.
+# 그 밖의 문서가 옛 경로를 쓰면 깨진 참조다 (2.0.0 뒤에 쓴 문서는 새 경로를 알아야 한다).
+RETIRED_PREFIXES = ("templates/dev-kit/", ".claude/")   # 옛 배포본은 제품의 .claude/ 에 키트 파일을 두었다
+HISTORICAL = ("CHANGELOG.md", "docs/history/")
 BACKTICK = re.compile(r"`([^`\n]+)`")
 
 
@@ -119,6 +127,8 @@ def check_1c():
             if any(g in tok for g in GENERATED):
                 continue
             seen += 1
+            if rel(f).startswith(HISTORICAL) and tok.startswith(RETIRED_PREFIXES):
+                continue
             if not os.path.exists(os.path.join(ROOT, tok)) and not os.path.exists(os.path.join(KIT, tok)):
                 bad("깨진 참조(저장소 자신): %s → `%s`" % (rel(f), tok))
     if seen == 0:
@@ -189,7 +199,7 @@ def check_5():
 # ── 6. report.py 가 하드코딩한 절 이름 ──────────────────────────────────
 # **대상 파일을 해석한다.** 키트 전체 헤딩을 한 통에 모아 접두 매칭하면 동명 헤딩에 가려
 # 개명이 조용히 통과한다(#110) — 하필 그 예가 이번에 고친 #090 과 같은 자리였다.
-RPT = os.path.join(KIT, ".claude", "scripts", "report.py")
+RPT = os.path.join(PLUGIN, "scripts", "report.py")
 
 
 def _rd_path(node, assigns):
@@ -389,12 +399,12 @@ def repo_shell():
     out = []
     for d in (os.path.join(ROOT, "scripts"), os.path.join(ROOT, ".githooks"),
               os.path.join(ROOT, ".claude", "scripts"),
-              os.path.join(KIT, ".claude", "scripts"), os.path.join(KIT, ".claude", "hooks")):
+              os.path.join(PLUGIN, "scripts"), os.path.join(PLUGIN, "hooks"), os.path.join(PLUGIN, "bin")):
         if not os.path.isdir(d):
             continue
         for fn in sorted(os.listdir(d)):
             p = os.path.join(d, fn)
-            if os.path.isfile(p) and (fn.endswith(".sh") or d.endswith(".githooks")):
+            if os.path.isfile(p) and (fn.endswith(".sh") or d.endswith(".githooks") or d.endswith("bin")):
                 out.append(p)
     return out
 
@@ -429,41 +439,160 @@ def check_10():
 
 
 
-# ── 11. 키트가 배포하는 커맨드·에이전트는 전부 `mdm-` 으로 시작한다 ────
-# 0.7.0 이 「이름 공간을 하나 차지한다」고 선언했다. 선언만 있고 장치가 없으면
-# 다음에 `deploy.md` 하나가 조용히 들어와 그 저장소 것과 부딪친다 (절대 규칙 3).
-# 파일명과 frontmatter `name:` 을 **둘 다** 본다 — 하나만 보면 다른 하나가 드리프트한다.
-KIT_CLAUDE = os.path.join(KIT, ".claude")
+# ── 11. 플러그인 이름 공간 정합 ────────────────────────────────────────
+# 0.7.0 은 충돌을 피하려고 파일명에 `mdm-` 을 붙였다. 2.0.0 부터 그 몫은 플러그인 이름 공간(`/mdm:adopt` ·
+# `mdm:code-review`)이 한다 — 파일명에 접두가 남으면 `/mdm:mdm-adopt` 가 된다(실측). 이름 공간이 생기면서
+# 새 결함 유형이 생겼다: 문서가 부르는 `/mdm:<이름>` 이 실재하지 않거나, 제품에 더는 없는 `.claude/scripts/…`
+# 경로·옛 이름이 제품 양식에 남는 것이다 (제품에서는 `mdm ops refs` 가 그것을 깨진 참조로 잡아 **사용자 과실처럼** 보고한다).
+SLASH_CMD = re.compile(r"/mdm:([a-z][a-z0-9-]*)")
+AGENT_REF = re.compile(r"`mdm:([a-z][a-z0-9-]*)`")
+OLD_NAMES = re.compile(r"(?<![\w:-])/mdm-(adopt|plan|ready|review|stage|cycle-close|ingest-errors)\b"
+                       r"|(?<![\w:-])mdm-(code-review|error-learning)(?![\w-])")
+PRODUCT_MISSING = re.compile(r"\.claude/(commands|agents|hooks|scripts)/")
+# 제품이 부를 수 없는 엔진 파일을 맨 이름으로 부르는 산문 — 1.x 경로 치환이 백틱 안의 맨 이름을 놓쳤다(issues #435).
+# 엔진 파일을 **설명**하는 것(`check-plan.py` 등)은 허용하고, 사람이 실행하라고 적는 두 진입점만 본다.
+BARE_ENTRY = re.compile(r"(?<![\w/.-])(mdm-check|check-consistency)\.sh")
+
+
+def _plugin_md(sub):
+    d = os.path.join(PLUGIN, sub)
+    out = []
+    for dp, dns, fns in os.walk(d):
+        dns[:] = [x for x in dns if x != ".git"]
+        for fn in sorted(fns):
+            if fn.endswith(".md"):
+                out.append(os.path.join(dp, fn))
+    return out
 
 
 def check_11():
     seen = 0
+    names = {}
     for sub in ("commands", "agents"):
-        d = os.path.join(KIT_CLAUDE, sub)
+        d = os.path.join(PLUGIN, sub)
         if not os.path.isdir(d):
-            bad("키트 %s 디렉토리가 없다: %s — 검사 11 이 그 몫을 못 본다 (조용히 넘어가지 않는다)"
+            bad("플러그인 %s 디렉토리가 없다: %s — 검사 11 이 그 몫을 못 본다 (조용히 넘어가지 않는다)"
                 % (sub, rel(d)))
-            continue      # 한쪽이 없다고 다른 쪽까지 건너뛰지 않는다
-        # **하위 디렉토리까지 훑는다.** `os.listdir` 로 최상위만 보면 `commands/extra/deploy.md` 가
-        # 검사를 통과하고 신규 설치(`cp -R`)가 그대로 배포한다 (2회전 K2 가 실측으로 뚫었다).
-        for dp, dns, fns in os.walk(d):
-            dns[:] = [x for x in dns if x != ".git"]
-            for fn in sorted(fns):
-                p = os.path.join(dp, fn)
-                if not (os.path.isfile(p) and fn.endswith(".md")):
-                    continue
-                seen += 1
-                if not fn.startswith("mdm-"):
-                    bad("키트가 배포하는 %s 파일명이 `mdm-` 으로 시작하지 않는다: %s "
-                        "(0.7.0 이 예약한 이름 공간 밖이라 제품 저장소의 것과 부딪친다)" % (sub, rel(p)))
-                n = fm_name(p)
-                if n and not n.startswith("mdm-"):
-                    bad("키트 %s 의 name 이 `mdm-` 으로 시작하지 않는다: %s (%s)" % (sub, n, rel(p)))
+            continue
+        names[sub] = set()
+        for p in _plugin_md(sub):
+            fn = os.path.basename(p)
+            seen += 1
+            base = fn[:-3]
+            if base.startswith("mdm-"):
+                bad("플러그인 %s 파일명에 `mdm-` 접두가 남았다: %s — 이름 공간은 플러그인이 붙인다 (이대로면 `/mdm:%s` 가 된다)"
+                    % (sub, rel(p), base))
+            n = fm_name(p)
+            if n and n.startswith("mdm-"):
+                bad("플러그인 %s 의 name 에 `mdm-` 접두가 남았다: %s (%s)" % (sub, n, rel(p)))
+            if sub == "agents" and n and n != base:
+                bad("플러그인 에이전트 파일명과 name 이 다르다: %s vs %s (%s)" % (base, n, rel(p)))
+            names[sub].add(base)
     if seen == 0:
-        bad("검사 11 이 키트 커맨드·에이전트를 한 건도 찾지 못했다 — 추출이 깨졌다 (통과로 위장하지 않는다)")
+        bad("검사 11 이 플러그인 커맨드·에이전트를 한 건도 찾지 못했다 — 추출이 깨졌다 (통과로 위장하지 않는다)")
+        return
+    # 참조 실재 — 플러그인 안의 모든 md (양식·커맨드·에이전트·README)
+    refs = 0
+    for f in kit_docs():
+        body = read(f)
+        for m in SLASH_CMD.findall(body):
+            refs += 1
+            if "commands" in names and m not in names["commands"]:
+                bad("문서가 없는 커맨드를 부른다: %s → `/mdm:%s` (plugins/mdm/commands/%s.md 가 없다)" % (rel(f), m, m))
+        for m in AGENT_REF.findall(body):
+            refs += 1
+            if "agents" in names and m not in names["agents"]:
+                bad("문서가 없는 서브에이전트를 가리킨다: %s → `mdm:%s` (plugins/mdm/agents/%s.md 가 없다)" % (rel(f), m, m))
+    if refs == 0:
+        bad("검사 11 이 `/mdm:…`·`mdm:…` 참조를 한 건도 찾지 못했다 — 추출이 깨졌다 (통과로 위장하지 않는다)")
+    # 제품 양식·커맨드·에이전트에 제품에 없는 경로·옛 이름이 남았는가 (README 는 1.x 이관 절에서 옛 경로를 설명하므로 제외)
+    for sub in ("templates", "commands", "agents"):
+        for f in _plugin_md(sub):
+            for i, ln in enumerate(read(f).split("\n"), 1):
+                if PRODUCT_MISSING.search(ln):
+                    bad("%s:%d — 제품에 없는 경로를 가리킨다 (`.claude/{commands,agents,hooks,scripts}/` 는 2.0.0 부터 플러그인이 제공한다 — `mdm …`·`/mdm:…` 으로 쓴다)"
+                        % (rel(f), i))
+                m = BARE_ENTRY.search(ln)
+                if m:
+                    bad("%s:%d — 제품에 없는 엔진 파일을 부른다: `%s` (제품에서는 `mdm final`·`mdm check` 로 쓴다)" % (rel(f), i, m.group(0)))
+                m = OLD_NAMES.search(ln)
+                if m:
+                    bad("%s:%d — 1.x 이름이 남았다: `%s` (2.0.0 은 `/mdm:<이름>`·`mdm:<이름>`)" % (rel(f), i, m.group(0)))
 
 
-for fn in (check_1c, check_5, check_6, check_7, check_8, check_9, check_10, check_11):
+# ── 12. 플러그인 매니페스트 정합 ────────────────────────────────────────
+# 버전이 네 곳에 적힌다 — plugin.json · 제품 CLAUDE.md 스탬프 · marketplace.json 항목 · 제품 CI 양식의 MDM_KIT_REF 핀.
+# 하나만 올리면 설치기가 「배포본이 깨졌다」로 죽거나(스탬프≠plugin.json), 제품 CI 가 다른 엔진으로 판정한다(핀).
+# hooks.json 이 없는 훅을 가리키면 Claude Code 는 조용히 아무것도 안 돈다 — 훅 셋이 전부 꺼진 채 조용하다.
+def check_12():
+    import json
+    def load(p):
+        try:
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError) as e:
+            bad("JSON 을 읽을 수 없다: %s (%s)" % (rel(p), e))
+            return None
+    pj = load(os.path.join(PLUGIN, ".claude-plugin", "plugin.json"))
+    mk = load(os.path.join(ROOT, ".claude-plugin", "marketplace.json"))
+    hk = load(os.path.join(PLUGIN, "hooks", "hooks.json"))
+    if pj is None or mk is None or hk is None:
+        return
+    ver = pj.get("version")
+    if not isinstance(ver, str) or not ver:
+        bad("plugin.json 에 version 이 없다")
+        return
+    if pj.get("name") != "mdm":
+        bad("plugin.json 의 name 이 `mdm` 이 아니다: %r — 커맨드 이름 공간(`/mdm:…`)·문서 전부가 이 이름을 전제한다" % pj.get("name"))
+    m = re.search(r"dev-kit v([0-9][\w.\-]*)", read(os.path.join(KIT, "CLAUDE.md")).split("\n", 1)[0])
+    stamp = m.group(1) if m else None
+    if stamp != ver:
+        bad("버전 불일치: plugin.json %s vs templates/CLAUDE.md 첫 줄 스탬프 %s — 설치기가 배포본이 깨졌다고 죽는다" % (ver, stamp))
+    entries = [e for e in mk.get("plugins", []) if isinstance(e, dict) and e.get("name") == "mdm"]
+    if not entries:
+        bad("marketplace.json 에 `mdm` 항목이 없다")
+    else:
+        e = entries[0]
+        if e.get("version") != ver:
+            bad("버전 불일치: marketplace.json 의 mdm 항목 %s vs plugin.json %s" % (e.get("version"), ver))
+        src = e.get("source")
+        if not (isinstance(src, str) and os.path.isdir(os.path.join(ROOT, src))):
+            bad("marketplace.json 의 mdm source 가 실재하는 디렉토리가 아니다: %r" % src)
+    if (mk.get("metadata") or {}).get("version") not in (None, ver):
+        bad("버전 불일치: marketplace.json 의 metadata.version %s vs plugin.json %s" % (mk["metadata"]["version"], ver))
+    # 다른 에이전트·README 가 clone 할 엔진 판 — 제품 AGENTS.md 는 Codex 등이 어느 엔진을 받을지 정한다(issues #433)
+    for doc in [os.path.join(KIT, "AGENTS.md"), os.path.join(PLUGIN, "README.md")]:
+        for pin in re.findall(r"--branch v([0-9][\w.\-]*)", read(doc)):
+            if pin != ver:
+                bad("버전 불일치: %s 의 --branch v%s vs plugin.json %s — 그 안내대로 clone 하면 다른 엔진을 받는다" % (rel(doc), pin, ver))
+    ci = read(os.path.join(KIT, ".github", "workflows", "mdm-check.yml"))
+    m = re.search(r"MDM_KIT_REF:\s*[\"']?v?([0-9][\w.\-]*)", ci)
+    pin = m.group(1) if m else None
+    if pin != ver:
+        bad("버전 불일치: 제품 CI 양식의 MDM_KIT_REF 핀 %s vs plugin.json %s — 새로 설치한 제품의 CI 가 다른 엔진을 받는다" % (pin, ver))
+    cmds = 0
+    for event, groups in (hk.get("hooks") or {}).items():
+        for g in groups or []:
+            for h in g.get("hooks") or []:
+                cmd = str(h.get("command", ""))
+                cmds += 1
+                m = re.search(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\s\"']+)", cmd)
+                if not m:
+                    bad("hooks.json %s 의 command 가 ${CLAUDE_PLUGIN_ROOT}/… 형태가 아니다: %r" % (event, cmd))
+                    continue
+                target = os.path.join(PLUGIN, m.group(1))
+                if not os.path.isfile(target):
+                    bad("hooks.json %s 가 없는 훅을 가리킨다: %s — 그 훅은 조용히 안 돈다" % (event, m.group(1)))
+                elif not os.access(target, os.X_OK):
+                    bad("hooks.json %s 가 가리키는 훅에 실행 권한이 없다: %s" % (event, m.group(1)))
+    if cmds == 0:
+        bad("hooks.json 에 훅이 하나도 없다 — 훅 셋(의존성·비밀값·STATUS)이 전부 꺼진다")
+    launcher = os.path.join(PLUGIN, "bin", "mdm")
+    if not (os.path.isfile(launcher) and os.access(launcher, os.X_OK)):
+        bad("plugins/mdm/bin/mdm 런처가 없거나 실행 권한이 없다 — 문서의 `mdm …` 명령 전부가 죽는다")
+
+
+for fn in (check_1c, check_5, check_6, check_7, check_8, check_9, check_10, check_11, check_12):
     fn()
 
 for m in problems:

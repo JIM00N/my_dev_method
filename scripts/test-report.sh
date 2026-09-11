@@ -5,14 +5,14 @@
 # **축약 슬롯을 안 봤다**. Story 문서와 축약 슬롯은 배타가 아니라 **공존**한다 —
 # 어떤 항목이 문서를 갖는지는 `docs/guides/profiles.md` 「Story 문서」 행이 정하고,
 # Standard 는 일부만 문서를 가지므로 나머지는 사이클 문서에 남는다.
-# 그 모드에서 리포트가 반쪽이 되면 `/mdm-ready` DoD 의 "리포트를 확인했다"가
+# 그 모드에서 리포트가 반쪽이 되면 `/mdm:ready` DoD 의 "리포트를 확인했다"가
 # **보지 못한 슬롯을 확인한 것으로** 통과한다.
 #
 # 검사기를 읽는 게 아니라 돌린다. 마지막의 뮤테이션 자기검증이
 # "이 fixture 가 진짜로 그 분기를 재고 있는지"를 못박는다 (루트 CLAUDE.md 절대 규칙 3).
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-KIT="$ROOT/templates/dev-kit"
+PLUGIN="$ROOT/plugins/mdm"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -27,9 +27,10 @@ command -v python3 >/dev/null 2>&1 || { echo "python3 가 없어 report.py 회�
 make_fixture() {
   local d="$TMP/fx"
   rm -rf "$d"
-  mkdir -p "$d/.claude/scripts" "$d/docs/plan/stories" "$d/docs/plan/cycles" \
+  # 엔진은 제품 fixture 밖(형제 디렉토리)에 둔다 — 2.0.0 부터 제품에는 엔진이 없다. 제품 루트는 MDM_PROJECT_ROOT 로 넘긴다.
+  rm -rf "$d-engine"; mkdir -p "$d-engine" "$d/docs/plan/stories" "$d/docs/plan/cycles" \
            "$d/docs/spec" "$d/docs/guides" "$d/docs/status"
-  cp "$KIT/.claude/scripts/report.py" "$KIT/.claude/scripts/mdm_model.py" "$d/.claude/scripts/"
+  cp "$PLUGIN/scripts/report.py" "$PLUGIN/scripts/mdm_model.py" "$PLUGIN/scripts/mdm_env.py" "$d-engine/"
 
   printf '# fixture 프로젝트\n' > "$d/CLAUDE.md"
 
@@ -70,7 +71,7 @@ MD
   printf '%s' "$d"
 }
 
-gen() { ( cd "$1" && python3 .claude/scripts/report.py ready >/dev/null 2>&1 && cat docs/reports/ready-*.html ); }
+gen() { ( cd "$1" && MDM_PROJECT_ROOT="$1" python3 "$1-engine/report.py" ready >/dev/null 2>&1 && cat docs/reports/ready-*.html ); }
 
 echo "report.py — 개발 준비 슬롯 공존 모드"
 
@@ -103,7 +104,7 @@ esac
 # 뮤테이션 자기검증 — 옛 조기 반환(`if out: return`)을 되살리면 위 공존 케이스가 반드시 깨져야 한다.
 echo "뮤테이션 자기검증"
 d3=$(make_fixture)
-python3 - "$d3/.claude/scripts/report.py" <<'PY'
+python3 - "$d3-engine/report.py" <<'PY'
 import re, sys
 p = sys.argv[1]
 s = open(p, encoding='utf-8').read()

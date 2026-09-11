@@ -10,7 +10,15 @@
 # 마지막에 뮤테이션 자기검증으로 "fixture 가 아무거나 통과시키지 않는지"를 다시 못박는다.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-KIT="$ROOT/templates/dev-kit"
+PLUGIN="$ROOT/plugins/mdm"
+# 엔진(플러그인 scripts/)은 제품 fixture **밖**의 형제 디렉토리 `<fixture>-engine` 에 복사한다 —
+# 2.0.0 부터 엔진은 제품에 없고, 제품 루트는 MDM_PROJECT_ROOT 로 넘긴다 (plugins/mdm/scripts/mdm_env.py).
+ENGINE_FILES="check-consistency.sh check-plan.py mdm_env.py mdm_model.py mdm-contract.py mdm_operations.py mdm-ops.py"
+copy_engine() { # $1 = fixture 경로 → "$1-engine" 에 엔진 사본을 깐다
+  rm -rf "$1-engine"; mkdir -p "$1-engine"
+  local f; for f in $ENGINE_FILES; do cp "$PLUGIN/scripts/$f" "$1-engine/"; done
+  chmod +x "$1-engine/check-consistency.sh" "$1-engine/check-plan.py"
+}
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -22,9 +30,8 @@ ng()  { printf '  실패  %s\n' "$*"; fail=1; }
 make_fixture() {
   local rows="$1" d="$TMP/fx"
   rm -rf "$d"
-  mkdir -p "$d/.claude/scripts" "$d/docs/spec" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
-  chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
+  mkdir -p "$d/docs/spec" "$d/docs/upstream"
+  copy_engine "$d"
 
   printf '# upstream\n' > "$d/docs/upstream/prd.md"
   # 스냅샷 무결성(검사 A)이 H 를 가리지 않도록 해시를 실제로 맞춰 둔다.
@@ -49,7 +56,7 @@ make_fixture() {
   printf '%s' "$d"
 }
 
-run() { ( cd "$1" && bash .claude/scripts/check-consistency.sh --init 2>&1 ); }
+run() { ( cd "$1" && MDM_PROJECT_ROOT="$1" bash "$1-engine/check-consistency.sh" --init 2>&1 ); }
 
 # 기대 신호가 출력에 있어야 한다
 expect_signal() { # $1 설명  $2 fixture경로  $3 기대 문자열
@@ -282,9 +289,8 @@ expect_signal "R9 개행 없는 마지막 줄의 유령 행을 잡는다" "$d" "
 
 # R10. [K6 보통] 도입 전 조기 종료 — fixture 가 없어 블록 제거 회귀를 못 잡던 것
 d="$TMP/fx"; rm -rf "$d"
-mkdir -p "$d/.claude/scripts" "$d/docs/spec"
-cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
-chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
+mkdir -p "$d/docs/spec"
+copy_engine "$d"
 add_registries "$d"
 printf '# C01\n' > "$d/docs/plan/cycles/C01-first.md"
 out="$(run "$d")"; rc=$?
@@ -381,9 +387,8 @@ echo "검사 J — 계획 깊이 (self:plan 계획 문서)"
 make_plan() {
   local d="$TMP/fxj" h
   rm -rf "$d"
-  mkdir -p "$d/.claude/scripts" "$d/docs/upstream"
-  cp "$KIT/.claude/scripts/check-consistency.sh" "$KIT/.claude/scripts/check-plan.py" "$KIT/.claude/scripts/mdm_model.py" "$KIT/.claude/scripts/mdm-contract.py" "$KIT/.claude/scripts/mdm_operations.py" "$KIT/.claude/scripts/mdm-ops.py" "$d/.claude/scripts/"
-  chmod +x "$d/.claude/scripts/check-consistency.sh" "$d/.claude/scripts/check-plan.py"
+  mkdir -p "$d/docs/upstream"
+  copy_engine "$d"
   printf '%s\n' "$1" > "$d/docs/upstream/plan.md"
   if command -v sha256sum >/dev/null 2>&1; then h=$(sha256sum "$d/docs/upstream/plan.md" | awk '{print $1}')
   else h=$(shasum -a 256 "$d/docs/upstream/plan.md" | awk '{print $1}'); fi
@@ -1264,7 +1269,7 @@ expect_signal "J40-b 그 계획은 통과한다" "$d" "정합성 검사 통과"
 # 「조용히 안 도는 검사는 없는 검사다」를 그 경계마다 못박는다 (루트 CLAUDE.md 절대 규칙 3).
 
 # J34. 본체 파일이 없으면 **건너뛰지 않고 실패한다**
-d=$(make_plan "$J_OK"); rm -f "$d/.claude/scripts/check-plan.py"
+d=$(make_plan "$J_OK"); rm -f "$d-engine/check-plan.py"
 expect_fail "J34 check-plan.py 가 없으면 fail-closed 다" "$d" "check-plan.py 가 없다"
 
 # J35. python3 가 없으면 **건너뛰지 않고 실패한다** — 이 판이 python3 를 필수 의존으로 올렸다.
@@ -1274,7 +1279,7 @@ nopy="$TMP/nopy"; rm -rf "$nopy"; mkdir -p "$nopy"
 for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf mktemp rm sha256sum shasum find dirname basename; do
   p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nopy/$c"
 done
-out="$( cd "$d" && PATH="$nopy" "$(command -v bash)" .claude/scripts/check-consistency.sh --init 2>&1 )"; rc=$?
+out="$( cd "$d" && MDM_PROJECT_ROOT="$d" PATH="$nopy" "$(command -v bash)" "$d-engine/check-consistency.sh" --init 2>&1 )"; rc=$?
 case "$out" in
   *"python3 가 없어 계획 깊이 검사(J)를 돌릴 수 없다"*)
     if [ "$rc" = 1 ]; then ok "J35 python3 가 없으면 fail-closed 다 (건너뛰지 않는다)"
@@ -1289,7 +1294,7 @@ nomk="$TMP/nomk"; rm -rf "$nomk"; mkdir -p "$nomk"
 for c in bash sh awk grep sed cut ls sort uniq tr head tail cat printf rm sha256sum shasum find dirname basename python3; do
   p=$(command -v "$c" 2>/dev/null) && ln -sf "$p" "$nomk/$c"
 done
-out="$( cd "$d" && PATH="$nomk" "$(command -v bash)" .claude/scripts/check-consistency.sh --init 2>&1 )"; rc=$?
+out="$( cd "$d" && MDM_PROJECT_ROOT="$d" PATH="$nomk" "$(command -v bash)" "$d-engine/check-consistency.sh" --init 2>&1 )"; rc=$?
 case "$out" in
   *"임시 파일을 만들지 못해"*)
     if [ "$rc" = 1 ]; then ok "J35-b mktemp 가 없으면 fail-closed 다"
@@ -1299,18 +1304,18 @@ esac
 
 # J36. 본체가 **이상한 종료코드**로 끝나면 실패로 다룬다 — 모르는 상태를 통과로 세지 않는다
 d=$(make_plan "$J_OK")
-printf '#!/usr/bin/env python3\nimport sys\nsys.exit(3)\n' > "$d/.claude/scripts/check-plan.py"
+printf '#!/usr/bin/env python3\nimport sys\nsys.exit(3)\n' > "$d-engine/check-plan.py"
 expect_fail "J36 본체가 rc=3 으로 끝나면 실패로 다룬다" "$d" "비정상 종료했다 (rc=3)"
 
 # J37. 본체가 **상태를 안 남기면** 실패한다 — J_RAN 을 0 으로 둔 채 넘어가면 꼬리말이
 #      「self:plan 계획 문서도 없다」고 거짓을 말한다 (#303·#359 가 그 거짓의 자리다)
 d=$(make_plan "$J_OK")
-printf '#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n' > "$d/.claude/scripts/check-plan.py"
+printf '#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n' > "$d-engine/check-plan.py"
 expect_fail "J37 상태를 하나도 안 남기면 실패한다 (빈 상태 파일)" "$d" "상태 파일이 형식을 벗어났다"
 
 # J37-b. 열쇠가 **하나만** 있는 경우도 같다 — 「둘 다 읽었는가」로 판정한다
 d=$(make_plan "$J_OK")
-printf '#!/usr/bin/env python3\nimport sys\nopen(sys.argv[2],"w").write("ran=1\\n")\nsys.exit(0)\n' > "$d/.claude/scripts/check-plan.py"
+printf '#!/usr/bin/env python3\nimport sys\nopen(sys.argv[2],"w").write("ran=1\\n")\nsys.exit(0)\n' > "$d-engine/check-plan.py"
 expect_fail "J37-b 상태 파일이 형식을 벗어나면 실패한다" "$d" "상태 파일이 형식을 벗어났다"
 
 # J38. 본체의 **경고(rc=2)**가 셸 쪽 경고로 이어진다 — 실패로 올리지도, 삼키지도 않는다.
@@ -1328,7 +1333,7 @@ esac
 echo
 echo "뮤테이션 자기검증"
 d=$(make_fixture '| FR-1 | prd.md | — | ✅ | | C01 | 2 | — | ⬜ 대기 | — |')
-python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
+python3 - "$d-engine/check-consistency.sh" <<'PY'
 import sys, re
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 i = s.index('# ── H. 마일스톤 배치')
@@ -1345,7 +1350,7 @@ esac
 # "무엇을 재는지 증명되지 않은 검사"다 (K6: 잡히는 증거가 없는 검사는 없는 검사).
 d=$(make_fixture '| FR-1 | prd.md | — | | M1 | C01 | 1 | — | 🔵 진행 | — |
 | FR-2 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |')
-python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
+python3 - "$d-engine/check-consistency.sh" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 i = s.index('  # 준비도 — 이 칸은')
@@ -1362,7 +1367,7 @@ esac
 # I 블록도 같은 방식으로 못박는다.
 d=$(make_fixture "$I_BASE"); add_registries "$d"
 printf '# C01\n' > "$d/docs/plan/cycles/C01-first.md"
-python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
+python3 - "$d-engine/check-consistency.sh" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 i = s.index('# ── I. 문서 등재 대조')
@@ -1382,7 +1387,7 @@ d=$(make_fixture "$I_BASE"); add_registries "$d" '| C01 | 첫 | 🔵 |
 | C03 | 끝 | ✅ |'
 printf '# C01\n' > "$d/docs/plan/cycles/C01-first.md"
 printf '# C03\n' > "$d/docs/plan/archive/cycles/C03-done.md"
-python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
+python3 - "$d-engine/check-consistency.sh" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 old = ' "$ROOT"/docs/plan/archive/cycles/*.md'
@@ -1398,7 +1403,7 @@ esac
 
 # J 호출 블록도 같은 방식으로 못박는다 — 들어내면 정상 fixture 의 위반이 조용해져야 한다.
 d=$(make_plan "${J_OK/| 파일 모듈 |/| — |}")
-python3 - "$d/.claude/scripts/check-consistency.sh" <<'PY'
+python3 - "$d-engine/check-consistency.sh" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 i = s.index('# ── J. 계획 깊이')
@@ -1415,7 +1420,7 @@ esac
 # 증명되고, 정작 판정을 하는 파일은 무검증으로 남는다 — 0.8.0 이식이 새로 만든 자리다.
 # J-1 의 칸 검사(영향 영역·선행·먼저)를 들어내면 J1-b·J2 계열이 조용해져야 한다.
 d=$(make_plan "${J_OK/| 파일 모듈 |/| — |}")
-python3 - "$d/.claude/scripts/check-plan.py" <<'PY'
+python3 - "$d-engine/check-plan.py" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 i = s.index('        sid = cell(jrow, idx["사양"])')
@@ -1431,7 +1436,7 @@ esac
 
 # J-2(권한 표)도 따로 못박는다 — J-1 과 다른 함수이고 백스톱도 따로다.
 d=$(make_plan "${J_OK/| 자기 것 조회 | 남의 것 조회 | 숨김 |/| 자기 것 조회 | 남의 것 조회 |  |}")
-python3 - "$d/.claude/scripts/check-plan.py" <<'PY'
+python3 - "$d-engine/check-plan.py" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p, encoding='utf-8').read()
 old = "        if not pcell(rrow, ri_deny):"
@@ -1448,7 +1453,7 @@ esac
 # 옛 판은 주석만 「finish 를 옛 방식으로 되돌리면」이라 쓰고 **코드는 뮤테이션을 안 가했다**(rc 를 다시 볼 뿐이라
 # J1-b 의 중복이었다) — 2회전 별건 #334. 뮤턴트의 rc 를 먼저 단언하는 것이 이 저장소의 규율이다.
 mutate_finish() { # $1 fixture경로  $2 그 조기 종료를 특정하는 note 줄
-  python3 - "$1/.claude/scripts/check-consistency.sh" "$2" <<'MPY'
+  python3 - "$1-engine/check-consistency.sh" "$2" <<'MPY'
 import sys
 p, marker = sys.argv[1], sys.argv[2]
 s = open(p, encoding='utf-8').read()

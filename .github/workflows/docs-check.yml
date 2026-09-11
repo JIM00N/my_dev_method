@@ -15,9 +15,13 @@ jobs:
         run: bash scripts/test-consistency.sh
       - name: 리포트 회귀 검사
         run: bash scripts/test-report.sh
-      - name: 문서 검사 회귀 검사 (check-docs.sh 검사 1-c·5~11 이 붉어지는가)
+      - name: 문서 검사 회귀 검사 (check-docs.sh 검사 1-c·5~12 가 붉어지는가)
         run: bash scripts/test-docs-check.sh
-      - name: 설치·업그레이드 회귀 검사 (설치기가 0.7.0 개명의 옛 이름을 건드리지 않는가)
+      - name: 설치·업그레이드 회귀 검사 (문서 골격만 심는가 · settings.json 병합 · 1.x 잔재의 해시 분류와 불간섭)
         run: bash scripts/test-install-upgrade.sh
+      - name: 플러그인 훅 회귀 검사 (키트 표식이 있는 저장소만 판정하는가)
+        run: bash scripts/test-hooks.sh
+      - name: 런처 회귀 검사 (bin/mdm 분기표 · 실제 엔진 · 제품 CI 양식의 실행 줄)
+        run: bash scripts/test-launcher.sh
       - name: 계약·실행 증거·변경 운영 회귀
         run: python3 -m unittest discover -s scripts/tests -v

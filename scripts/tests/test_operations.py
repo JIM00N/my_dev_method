@@ -1,17 +1,19 @@
 """Operational gaps: omissions, semantic review, handoff, sync, deployment."""
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import test_contracts as fixtures
 KIT = fixtures.KIT
+PLUGIN = fixtures.PLUGIN
 
 
 class Operations(fixtures.Contracts):
     # Inherit fixture helpers, not the base regression cases.
     def ops(self, *args, rc=0):
-        p = subprocess.run([sys.executable, str(self.root / '.claude/scripts/mdm-ops.py'), *args],
-                           cwd=self.root, text=True, capture_output=True)
+        p = subprocess.run([sys.executable, str(self.engine / 'mdm-ops.py'), *args],
+                           cwd=self.root, text=True, capture_output=True, env=self.env)
         self.assertEqual(p.returncode, rc, p.stdout + p.stderr)
         return p.stdout
 
@@ -115,7 +117,7 @@ class Operations(fixtures.Contracts):
         before = {p.relative_to(self.root).as_posix(): p.read_bytes()
                   for p in (self.root / 'docs').rglob('*') if p.is_file()}
         script = '''import importlib.util,sys,os,pathlib
-p=pathlib.Path('.claude/scripts'); sys.path.insert(0,str(p))
+p=pathlib.Path(sys.argv[2]); sys.path.insert(0,str(p))
 spec=importlib.util.spec_from_file_location('sync_test',p/'mdm-contract.py')
 e=importlib.util.module_from_spec(spec); sys.modules[spec.name]=e; spec.loader.exec_module(e)
 original=e.atomic_bytes
@@ -125,7 +127,7 @@ def interrupted(rel, content, exclusive=False):
 e.atomic_bytes=interrupted
 e.operations.main(e,['sync-apply','--bundle','.tmp/bundle.json','--basis',sys.argv[1]])
 '''
-        p = subprocess.run([sys.executable, '-c', script, basis], cwd=self.root, capture_output=True)
+        p = subprocess.run([sys.executable, '-c', script, basis, str(self.engine)], cwd=self.root, capture_output=True, env=self.env)
         self.assertEqual(p.returncode, 99, p.stderr)
         self.assertIn('MDM_SYNC_PENDING', self.cli('check', rc=1))
         # The child is confirmed stopped; release its orphaned lock before recovery.
@@ -164,7 +166,7 @@ e.operations.main(e,['sync-apply','--bundle','.tmp/bundle.json','--basis',sys.ar
         self.put('src/app.py', 'changed after handoff')
         import os
         env = dict(os.environ, CLAUDE_PROJECT_DIR=str(self.root), TMPDIR=str(self.root / '.tmp'))
-        hook = KIT / '.claude/hooks/status-updated.sh'
+        hook = PLUGIN / 'hooks/status-updated.sh'
         p = subprocess.run(['bash', str(hook)], input='{}', text=True, env=env, capture_output=True)
         self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
         self.assertIn('인계', p.stderr)
@@ -204,6 +206,9 @@ e.operations.main(e,['sync-apply','--bundle','.tmp/bundle.json','--basis',sys.ar
         result = json.loads(self.ops('doctor', '--run'))
         self.assertTrue(result['adopted'])
         self.assertEqual(result['local_check']['status'], 'passed', result)
+        # 양식 그대로 심은 제품 CI 의 핀은 플러그인 버전과 같다
+        self.assertIs(result['ci_pin_matches'], True, result)
+        self.assertEqual(Path(result['engine']).resolve(), self.engine.resolve())   # macOS 의 /var → /private/var 심볼릭 링크
         status.write_text(status.read_text() + '\nnew decision\n')
         result = json.loads(self.ops('doctor', '--run'))
         self.assertEqual(result['local_check']['status'], 'failed')
@@ -212,13 +217,14 @@ e.operations.main(e,['sync-apply','--bundle','.tmp/bundle.json','--basis',sys.ar
     def test_install_seeds_ci_without_overwriting_project_workflow(self):
         target = self.root / 'product'
         target.mkdir()
-        installer = KIT.parents[1] / 'scripts/install-kit.sh'
+        installer = PLUGIN / 'scripts/init-project.sh'
         for mode in [[], ['--upgrade']]:
             p = subprocess.run(['bash', str(installer), str(target), *mode], capture_output=True, text=True)
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
             workflow = target / '.github/workflows/mdm-check.yml'
             if not mode:
-                self.assertIn('mdm-check.sh', workflow.read_text())
+                self.assertIn('MDM_KIT_REF', workflow.read_text())
+                self.assertIn('bin/mdm', workflow.read_text())
                 workflow.write_text('project owned workflow')
             else:
                 self.assertEqual(workflow.read_text(), 'project owned workflow')
@@ -237,6 +243,45 @@ e.operations.main(e,['sync-apply','--bundle','.tmp/bundle.json','--basis',sys.ar
         obj['necessary_questions'] = 1
         self.put('.tmp/pilot.json', json.dumps(obj))
         self.ops('pilot', '--record', '.tmp/pilot.json', rc=1)
+
+    def test_doctor_compares_ci_pin_with_plugin_version(self):
+        # 로컬 플러그인과 제품 CI 가 다른 엔진 판을 쓰면 판정이 갈린다 — doctor 가 핀을 대조한다.
+        self.put('.github/workflows/mdm-check.yml', 'env:\n  MDM_KIT_REF: v0.0.1\n')
+        obj = json.loads(self.ops('doctor'))
+        self.assertEqual(obj['ci_pin'], '0.0.1')
+        self.assertIs(obj['ci_pin_matches'], False)
+        self.put('.github/workflows/mdm-check.yml', 'env:\n  MDM_KIT_REF: v%s\n' % obj['plugin_version'])
+        obj = json.loads(self.ops('doctor'))
+        self.assertIs(obj['ci_pin_matches'], True)
+        self.assertIs(obj['ci_legacy'], False)
+        # 파일은 있는데 핀이 없다 — 1.x 양식은 옛 엔진 경로를 부르므로 로컬과 다른 엔진으로 판정한다 (#427)
+        self.put('.github/workflows/mdm-check.yml', 'jobs:\n  c:\n    steps:\n      - run: bash .claude/scripts/mdm-check.sh\n')
+        obj = json.loads(self.ops('doctor'))
+        self.assertIsNone(obj['ci_pin'])
+        self.assertIs(obj['ci_pin_matches'], False)
+        self.assertIs(obj['ci_legacy'], True)
+        (self.root / '.github/workflows/mdm-check.yml').unlink()
+        obj = json.loads(self.ops('doctor'))
+        self.assertIsNone(obj['ci_pin'])
+        self.assertIsNone(obj['ci_pin_matches'])
+        self.assertFalse(obj['ci_file'])
+        self.assertIs(obj['ci_legacy'], False)
+
+    def test_project_root_comes_from_environment_not_engine_location(self):
+        # 2.0.0: 엔진은 플러그인에 있으므로 자기 경로로 제품을 찾으면 안 된다. 환경이 없으면 git 루트, 그다음 cwd.
+        env = dict(os.environ)
+        env.pop('MDM_PROJECT_ROOT', None); env.pop('CLAUDE_PROJECT_DIR', None)
+        p = subprocess.run([sys.executable, '-c', 'import mdm_env; print(mdm_env.project_root())'],
+                           cwd=self.root, env=dict(env, PYTHONPATH=str(self.engine)), capture_output=True, text=True)
+        self.assertEqual(p.stdout.strip(), str(self.root.resolve()))
+        subprocess.run(['git', 'init', '-q'], cwd=self.root, check=True)
+        sub = self.root / 'src'
+        p = subprocess.run([sys.executable, '-c', 'import mdm_env; print(mdm_env.project_root())'],
+                           cwd=sub, env=dict(env, PYTHONPATH=str(self.engine)), capture_output=True, text=True)
+        self.assertEqual(p.stdout.strip(), str(self.root.resolve()))
+        p = subprocess.run([sys.executable, '-c', 'import mdm_env; print(mdm_env.project_root())'],
+                           cwd=sub, env=dict(env, PYTHONPATH=str(self.engine), MDM_PROJECT_ROOT=str(sub)), capture_output=True, text=True)
+        self.assertEqual(p.stdout.strip(), str(sub.resolve()))
 
 
 # Keep inherited helpers but do not run the base cases twice.

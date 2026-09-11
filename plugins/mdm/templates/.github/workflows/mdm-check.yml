@@ -1,0 +1,21 @@
+name: MDM project checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+env:
+  # dev-kit 플러그인 버전 핀. 플러그인을 올리면 이 값도 올린다 — `mdm doctor` 가 플러그인 버전과 대조한다(ci_pin_matches).
+  # 원본 저장소 태그는 v<버전> 이다 (plugins/mdm/.claude-plugin/plugin.json 의 version 과 같다).
+  MDM_KIT_REF: v2.0.0
+jobs:
+  mdm-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: dev-kit 엔진 가져오기 (제품 작업 트리 밖에 둔다 — 파일 집합 해시에 섞이지 않게)
+        run: git clone --quiet --depth 1 --branch "$MDM_KIT_REF" https://github.com/JIM00N/my_dev_method.git "$RUNNER_TEMP/mdm"
+      - name: Current contract, execution evidence and handoff
+        env:
+          MDM_PROJECT_ROOT: ${{ github.workspace }}
+        run: bash "$RUNNER_TEMP/mdm/plugins/mdm/bin/mdm" final

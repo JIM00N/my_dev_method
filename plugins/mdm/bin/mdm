@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# mdm — dev-kit 엔진 진입점.
+#
+# 플러그인의 bin/ 은 Claude Code 세션의 Bash 도구 PATH 에 오른다(2.0.0 전환 시 실측). 그래서 제품 저장소
+# 어디서든 `mdm <명령>` 으로 부른다. Claude Code 밖(CI·다른 에이전트)에서는 원본 저장소를 받아
+# `plugins/mdm/bin/mdm` 을 직접 부르거나 그 bin/ 을 PATH 에 넣는다.
+#
+# 제품 루트는 엔진 스크립트가 정한다 — MDM_PROJECT_ROOT → CLAUDE_PROJECT_DIR → git 루트 → 현재 디렉토리
+# (plugins/mdm/scripts/mdm_env.py 머리말이 정본). 이 런처는 경로를 정하지 않고 넘기기만 한다.
+set -uo pipefail
+# 심볼릭 링크로 PATH 에 올려도 돈다 — 링크를 따라가 실제 bin/ 을 찾는다 (issues #456).
+SELF="$0"
+while [ -L "$SELF" ]; do
+  link="$(readlink "$SELF")"
+  case "$link" in /*) SELF="$link" ;; *) SELF="$(dirname "$SELF")/$link" ;; esac
+done
+HERE="$(cd "$(dirname "$SELF")" && pwd)"
+SCRIPTS="$HERE/../scripts"
+
+usage() {
+  cat <<'USAGE'
+사용법: mdm <명령> [인자…]
+
+  check [--init] [--scope ST-n]   정합성 검사 A~J (check-consistency.sh)
+  final                           최종 통합 검사 — 정합성 + 현재 인계 (mdm-check.sh). 종료·CI 용
+  contract <하위명령> …           계약 근거 엔진 (mdm-contract.py): adopt · register · inspect · ready · verify · render · check
+  ops <하위명령> …                운영 엔진 (mdm-ops.py): catalog · plan · handoff · handoff-check · refs · sync-* · freshness · doctor · pilot
+  report <adopt|plan|ready|cycle> md 를 HTML 한 장으로 (report.py)
+  init <제품 경로> [--upgrade] [--retire-legacy]   제품 저장소에 문서 골격·CI·플러그인 등록을 심는다 (init-project.sh)
+  doctor [--run] [--github o/r]   설치·도입·CI 핀 진단 (= ops doctor)
+  root                            엔진이 판정한 제품 루트를 인쇄한다
+  version                         플러그인 버전
+USAGE
+}
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift
+case "$cmd" in
+  check)    exec bash "$SCRIPTS/check-consistency.sh" "$@" ;;
+  final)    exec bash "$SCRIPTS/mdm-check.sh" "$@" ;;
+  contract) exec python3 "$SCRIPTS/mdm-contract.py" "$@" ;;
+  ops)      exec python3 "$SCRIPTS/mdm-ops.py" "$@" ;;
+  report)   exec python3 "$SCRIPTS/report.py" "$@" ;;
+  init)     exec bash "$SCRIPTS/init-project.sh" "$@" ;;
+  doctor)   exec python3 "$SCRIPTS/mdm-ops.py" doctor "$@" ;;
+  root)     PYTHONPATH="$SCRIPTS${PYTHONPATH:+:$PYTHONPATH}" exec python3 -c 'import mdm_env; print(mdm_env.project_root())' ;;
+  version)  PYTHONPATH="$SCRIPTS${PYTHONPATH:+:$PYTHONPATH}" exec python3 -c 'import mdm_env; print(mdm_env.plugin_version() or "unknown")' ;;
+  help|-h|--help|"") usage ;;
+  *) echo "mdm: 알 수 없는 명령 '$cmd'" >&2; usage >&2; exit 64 ;;
+esac

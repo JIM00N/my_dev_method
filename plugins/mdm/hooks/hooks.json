@@ -1,0 +1,28 @@
+{
+  "description": "dev-kit 훅 — 의존성 가드(절대 규칙 4) · 비밀값 가드(절대 규칙 12) · STATUS/인계 가드(절대 규칙 9). 키트 프로젝트 표식(docs/status/STATUS.md)이 없는 저장소에서는 판정하지 않고 통과한다.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard-dependency.sh\"" },
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard-secrets.sh\"" }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard-dependency.sh\"" },
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard-secrets.sh\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/status-updated.sh\"" }
+        ]
+      }
+    ]
+  }
+}

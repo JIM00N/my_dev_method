@@ -21,8 +21,10 @@ scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 �
 scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기 · I 문서 등재 대조 · **J 계획 깊이**)
 python3 -m unittest discover -s scripts/tests -v  # 계약 근거·실행 증거
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
-scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (34 케이스 — 루트 `CLAUDE.md`가 정본) — 검사 1-c·5·6·7·8·9·10·11 에 위반을 심어 붉어지는지 실측
-scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (13 + 뮤테이션 1) — 설치기가 0.7.0 개명의 옛 이름을 **건드리지 않는가**(불간섭) + 알림·카탈로그 행 보존·키트 문서 갱신
+scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (단언 47줄 — 루트 `CLAUDE.md`가 정본) — 검사 1-c·5·6·7·8·9·10·11·12 에 위반을 심어 붉어지는지 실측
+scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (48 + 뮤테이션 1) — 문서 골격만 심는가 · settings.json 병합 · 1.x 잔재의 **해시 분류와 불간섭** · 소유권 보존
+scripts/test-hooks.sh            # 플러그인 훅 회귀 fixture (12 + 뮤테이션 3) — 키트 표식이 있는 저장소만 판정하는가 · 하위 디렉토리 세션·MDM_PROJECT_ROOT · 마커가 있을 때(GNU stat)
+scripts/test-launcher.sh         # bin/mdm 런처 회귀 fixture (15 + 뮤테이션 1) — 분기표(스텁 엔진) · 실제 엔진 · 제품 CI 양식의 실행 줄 · 링크 경유
 ```
 
 > 1단계는 **CI(`.github/workflows/docs-check.yml`)와 같은 검사여야 한다.** CI에 스텝이 추가되면 여기에도 추가한다 —
@@ -41,7 +43,7 @@ scripts/test-install-upgrade.sh  # 설치·업그레이드 회귀 fixture (13 + 
 | (항상 — 모든 변경은 약속에 닿을 수 있다) | K1 |
 | `*.md` — 문서·가이드·양식·커맨드·에이전트 정의 | K5 |
 | `*.sh` — 훅·검사기·설치기 | K2 · K3 · K6 |
-| `install-kit.sh` · STATUS 양식 · `MOC.md` · `mdm-adopt.md`/`mdm-stage.md` | K4 |
+| `init-project.sh`(`mdm init`) · 플러그인 매니페스트·`hooks.json`·`bin/mdm` · STATUS 양식 · `MOC.md` · `commands/adopt.md`/`stage.md`/`init.md` | K4 |
 | 릴리스 직전 · 대규모 변경 | 6축 전부 |
 
 | 축 | 에이전트 | 관점 |

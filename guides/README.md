@@ -1,6 +1,6 @@
 # 범용 가이드
 
-프로젝트 실행에 필요한 절차는 `templates/dev-kit/docs/guides/`가 단일 기준입니다.
+프로젝트 실행에 필요한 절차는 `plugins/mdm/templates/docs/guides/`가 단일 기준입니다.
 이 폴더에는 템플릿을 **보완하는 해설**만 둡니다. 템플릿과 같은 규칙을 중복해서 쓰지 않습니다.
 
 설치와 사용법은 저장소 루트의 [README.md](../README.md)가 정본입니다. 여기서 반복하지 않습니다.
@@ -8,5 +8,5 @@
 | 문서 | 대상 | 내용 |
 |---|---|---|
 | [getting-started.md](getting-started.md) | 절차를 따를지 판단하려는 사람 | 각 장치가 **왜** 그 모양인지 — 네 개의 층, 리뷰 분리, STATUS 한 장, 프로파일, 두 개의 승격 |
-| [harness-architecture.md](harness-architecture.md) | 하네스 내부를 확인하려는 사람 | V1.0.0 구성도·호출 관계·소스 지도·검사 경계 |
+| [harness-architecture.md](harness-architecture.md) | 하네스 내부를 확인하려는 사람 | V2.0.0 구성도·호출 관계·소스 지도·검사 경계 |
 | [harness-walkthrough.md](harness-walkthrough.md) | 운영 흐름을 이해하려는 사람 | 요구사항 하나의 도입·준비·실행·변경·인계 예시 |

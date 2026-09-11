@@ -95,12 +95,12 @@ expect_red "한글이 섞인 경로도 잡는다 (#148)" "$d" "깨진 참조(저
 
 echo
 echo "검사 5 — 「절 이름」 포인터"
-d=$(mkfx); sub "$d/templates/dev-kit/docs/guides/ready.md" \
+d=$(mkfx); sub "$d/plugins/mdm/templates/docs/guides/ready.md" \
   '## Story 크기 — 어디서 멈추나' '## Story 크기 판정'
 expect_red "헤딩 개명을 잡는다" "$d" "끊긴 절 포인터"
 expect_red "**C 로케일에서도** 잡는다 (#101)" "$d" "끊긴 절 포인터" "C"
 
-d=$(mkfx); sub "$d/templates/dev-kit/docs/guides/profiles.md" \
+d=$(mkfx); sub "$d/plugins/mdm/templates/docs/guides/profiles.md" \
   '| Story 문서 | 생략' '| Story 산출물 | 생략'
 expect_red "표 행 이름 개명을 잡는다 (#089 포인터 방어선)" "$d" "끊긴 절 포인터"
 
@@ -127,11 +127,11 @@ expect_green "인용구 안의 굵은 라벨 형태를 오탐하지 않는다 (#
 
 echo
 echo "검사 6 — report.py 가 하드코딩한 절 이름"
-d=$(mkfx); sub "$d/templates/dev-kit/.claude/scripts/report.py" \
+d=$(mkfx); sub "$d/plugins/mdm/scripts/report.py" \
   '"개발 준비 슬롯 — 12칸"' '"개발 준비 슬롯 — 없는 절"'
 expect_red "없는 절 이름을 잡는다" "$d" "report.py"
 
-d=$(mkfx); sub "$d/templates/dev-kit/docs/plan/cycles/C00-template.md" \
+d=$(mkfx); sub "$d/plugins/mdm/templates/docs/plan/cycles/C00-template.md" \
   '### 개발 준비 슬롯' '### 준비 슬롯 축약본'
 expect_red "**대상 파일**을 해석한다 — 동명 헤딩에 가려지지 않는다 (#110)" "$d" "report.py"
 
@@ -234,24 +234,63 @@ python3 -c 'import sys; open(sys.argv[1],"w",encoding="utf-8").write("#!/usr/bin
 expect_red "awk 한글 == 비교를 잡는다 (#098 재발)" "$d" "awk"
 
 echo
-echo "검사 11 — 키트 커맨드·에이전트의 mdm- 접두 (0.7.0 이 예약한 이름 공간)"
+echo "검사 11 — 플러그인 이름 공간 정합 (2.0.0: 접두 대신 이름 공간, 참조 실재, 제품에 없는 경로·옛 이름)"
 d=$(mkfx)
-printf -- '---\ndescription: 접두 없는 커맨드\n---\n\n본문\n' \
-  > "$d/templates/dev-kit/.claude/commands/deploy.md"
-expect_red "접두 없는 커맨드가 들어오면 잡는다" "$d" "mdm-"
+printf -- '---\ndescription: 접두가 남은 커맨드\n---\n\n본문\n' > "$d/plugins/mdm/commands/mdm-deploy.md"
+expect_red "커맨드 파일명에 \`mdm-\` 접두가 남으면 잡는다 (/mdm:mdm-deploy 가 된다)" "$d" "mdm-"
 
 d=$(mkfx)
-printf -- '---\nname: deployer\ndescription: d\ntools: Read\nmodel: inherit\n---\n\n본문\n' \
-  > "$d/templates/dev-kit/.claude/agents/mdm-deployer.md"
-expect_red "파일명은 맞는데 **name** 이 접두 없으면 잡는다" "$d" "name"
+printf -- '---\nname: mdm-deployer\ndescription: d\ntools: Read\nmodel: inherit\n---\n\n본문\n' > "$d/plugins/mdm/agents/mdm-deployer.md"
+expect_red "에이전트 name 에 접두가 남아도 잡는다" "$d" "name"
 
-d=$(mkfx); mkdir -p "$d/templates/dev-kit/.claude/commands/extra"
-printf -- '---\ndescription: 하위 디렉토리에 숨은 커맨드\n---\n\n본문\n' \
-  > "$d/templates/dev-kit/.claude/commands/extra/deploy.md"
-expect_red "**하위 디렉토리**에 넣어도 잡는다 (cp -R 이 그대로 배포한다)" "$d" "deploy.md"
+d=$(mkfx); printf '\n실행: `/mdm:nope`\n' >> "$d/plugins/mdm/templates/docs/guides/ready.md"
+expect_red "문서가 없는 커맨드(/mdm:nope)를 부르면 잡는다" "$d" "commands/nope.md"
 
-d=$(mkfx); rm -rf "$d/templates/dev-kit/.claude/commands"
-expect_red "키트 커맨드 디렉토리가 없으면 **조용히 꺼지지 않는다**" "$d" "그 몫을 못 본다"
+d=$(mkfx); printf '\n위임: `mdm:ghost` 서브에이전트\n' >> "$d/plugins/mdm/templates/docs/guides/ready.md"
+expect_red "문서가 없는 서브에이전트(mdm:ghost)를 가리키면 잡는다" "$d" "agents/ghost.md"
+
+d=$(mkfx); printf '\n검사: `.claude/scripts/check-consistency.sh`\n' >> "$d/plugins/mdm/templates/docs/guides/ready.md"
+expect_red "제품 양식에 제품에 없는 \`.claude/scripts/…\` 경로가 남으면 잡는다 (제품에서 mdm ops refs 가 사용자 과실처럼 보고한다)" "$d" "제품에 없는 경로"
+
+d=$(mkfx); printf '\n먼저 `/mdm-adopt` 를 돌린다\n' >> "$d/plugins/mdm/commands/ready.md"
+expect_red "커맨드에 1.x 이름(/mdm-adopt)이 남으면 잡는다" "$d" "1.x 이름"
+
+d=$(mkfx); printf '\n리뷰는 `mdm-code-review` 가 한다\n' >> "$d/plugins/mdm/templates/docs/guides/S6-build.md"
+expect_red "양식에 1.x 에이전트 이름(mdm-code-review)이 남으면 잡는다" "$d" "1.x 이름"
+
+d=$(mkfx); printf '\n검사: `mdm-check.sh` 로 확인한다\n' >> "$d/plugins/mdm/templates/docs/guides/ready.md"
+expect_red "제품 양식이 제품에 없는 엔진 파일을 맨 이름(mdm-check.sh)으로 부르면 잡는다 (#435)" "$d" "제품에 없는 엔진 파일"
+
+d=$(mkfx); rm -rf "$d/plugins/mdm/commands"
+expect_red "플러그인 커맨드 디렉토리가 없으면 **조용히 꺼지지 않는다**" "$d" "그 몫을 못 본다"
+
+echo
+echo "검사 12 — 플러그인 매니페스트 정합 (버전 네 곳 · 훅 파일 실재 · 런처)"
+d=$(mkfx); sub "$d/plugins/mdm/.claude-plugin/plugin.json" '"version": "' '"version": "9.9.'
+expect_red "plugin.json 버전만 올리면 스탬프·마켓·CI 핀과 어긋나 잡는다" "$d" "버전 불일치"
+
+d=$(mkfx); sub "$d/plugins/mdm/templates/.github/workflows/mdm-check.yml" 'MDM_KIT_REF: v' 'MDM_KIT_REF: v9.9.'
+expect_red "제품 CI 양식의 MDM_KIT_REF 핀만 어긋나도 잡는다" "$d" "MDM_KIT_REF"
+
+d=$(mkfx); sub "$d/.claude-plugin/marketplace.json" '"source": "./plugins/mdm"' '"source": "./plugins/nope"'
+expect_red "marketplace.json 의 source 가 실재하지 않으면 잡는다" "$d" "source"
+
+d=$(mkfx); sub "$d/plugins/mdm/hooks/hooks.json" 'hooks/guard-secrets.sh' 'hooks/guard-nothing.sh' all
+expect_red "hooks.json 이 없는 훅을 가리키면 잡는다 (그 훅은 조용히 안 돈다)" "$d" "guard-nothing.sh"
+
+d=$(mkfx); chmod -x "$d/plugins/mdm/hooks/status-updated.sh"
+expect_red "hooks.json 이 가리키는 훅에 실행 권한이 없으면 잡는다" "$d" "실행 권한"
+
+d=$(mkfx); sub "$d/plugins/mdm/templates/AGENTS.md" '--branch v' '--branch v1.9.'
+expect_red "제품 AGENTS.md 의 clone 핀(--branch)이 어긋나면 잡는다 (#433)" "$d" "--branch v1.9."
+
+d=$(mkfx); sub "$d/.claude-plugin/marketplace.json" '플러그인 마켓플레이스",
+    "version": "' '플러그인 마켓플레이스",
+    "version": "9.9.'
+expect_red "marketplace.json 의 metadata.version 이 어긋나면 잡는다 (#433)" "$d" "metadata.version"
+
+d=$(mkfx); rm -f "$d/plugins/mdm/bin/mdm"
+expect_red "런처 bin/mdm 이 없으면 잡는다 (문서의 mdm … 명령 전부가 죽는다)" "$d" "bin/mdm"
 
 echo
 if [ "$fail" = 0 ]; then

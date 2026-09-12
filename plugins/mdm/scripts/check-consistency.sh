@@ -13,6 +13,8 @@
 #   I. 문서 등재 대조       사이클·ADR 은 문서↔행 양방향 · Story 는 활성 행 유무·잔존 행만 (문서 없는 행은 안 잡는다)
 #   J. 계획 깊이            self:plan 계획 문서가 기능·사양까지 내려가고 사양마다 영향 영역·선행·먼저를 갖는가 + 권한 표
 #                          (본체는 같은 디렉토리의 check-plan.py — 마크다운 파싱이라 파이썬이 맡는다. python3 필수)
+#   K. 품질 명령 확정       code-conventions.md 1절의 포맷·린트·타입·테스트 명령과 CI 강제 여부가 정해졌는가
+#                          (착수한 요구사항이 있을 때만. 본체는 check-quality.py — 표 리더는 J 와 같은 mdm_md.py)
 #
 # 정본: docs/spec/source-map.md (요구사항·화면), docs/meta/stories.json (의존 관계)
 # 운영 준비·완료: mdm-contract.py. B/G의 이름·개수 검사는 --init 호환 진단만 한다.
@@ -659,6 +661,41 @@ if [ "$st_st" = 0 ]; then
       bad "$id — Story 는 archive 로 닫혔는데 활성 병렬 작업 표에 행이 남아 있다 → 행을 지운다 (닫힌 Story 는 문서만 archive 에 남긴다)"
     fi
   done
+fi
+
+# ── K. 품질 명령 확정 (docs/spec/code-conventions.md 1절) ────────────────
+# 검사 본체는 **같은 디렉토리의 `check-quality.py`** 다. 표 리더는 J 와 같은 `mdm_md.py` 하나를
+# 쓴다 — 이 저장소는 표 리더를 복제할 때마다 같은 결함 계열을 다시 밟았다.
+#
+# **착수한 뒤에만 판정한다.** 🔵·🟡·✅ 요구사항 건수를 여기서 세어 넘기고, 0 이면 본체가
+# 쉬었다고 말하고 통과한다 — 갓 설치한 저장소와 S4 이전은 1절이 비어 있는 것이 정상이라
+# 그때 붉히면 모든 제품이 `/mdm:init` 직후 실패한다.
+K_ACTIVE=0
+if [ -z "$i_state" ]; then
+  note "품질 명령 검사(K)를 돌리지 못했다 — 매핑표에 '상태' 열이 없어 착수 여부를 셀 수 없다 (위의 열 부재 지적을 먼저 해결한다)"
+else
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    case "$(cell "$row" "$i_state")" in
+      *🔵*|*🟡*|*✅*) K_ACTIVE=$((K_ACTIVE + 1)) ;;
+    esac
+  done < <(req_rows)
+  # python3 부재는 여기서 따로 보지 않는다 — **도달 불가**다. 위쪽 `python3 "$ENGINE/mdm-contract.py"`
+  # 가 먼저 rc=127 로 죽고 `finish` 가 exit 1 한다(1회전 K3·F6 반증 실측). 못 잡히는 분기를 남기느니
+  # 두지 않는다 — J 블록이 「도달 불가 분기를 남기느니」로 같은 판단을 한 자리와 같다.
+  # (그래도 python3 가 사라진 경로가 생기면 아래 `*)` 가 rc=127 을 비정상 종료로 잡는다)
+  K_PY="$ENGINE/check-quality.py"
+  if [ ! -f "$K_PY" ]; then
+    bad "엔진에 check-quality.py 가 없다 ($K_PY) — 품질 명령 검사(K)를 돌릴 수 없다. 플러그인 설치가 깨졌다: /plugin 에서 mdm 을 다시 설치한다"
+  else
+    python3 "$K_PY" --active "$K_ACTIVE"
+    K_RC=$?
+    case "$K_RC" in
+      0) ;;
+      1) fail=1 ;;
+      *) bad "품질 명령 검사(K)가 비정상 종료했다 (rc=$K_RC) — check-quality.py 를 직접 돌려 원인을 본다" ;;
+    esac
+  fi
 fi
 
 # ── 결과 ─────────────────────────────────────────────────────────────────

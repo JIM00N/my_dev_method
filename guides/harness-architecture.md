@@ -46,6 +46,7 @@ flowchart TD
     A[`mdm final`] --> B[check-consistency.sh]
     A --> C[mdm-ops.py handoff-check]
     B --> D[check-plan.py: 계획 깊이 J]
+    B --> K[check-quality.py: 품질 명령 확정 K]
     B --> E[mdm-contract.py: 계약·증거 검사]
     B --> O[mdm-ops.py refs: 제품 참조 검사]
     O --> G

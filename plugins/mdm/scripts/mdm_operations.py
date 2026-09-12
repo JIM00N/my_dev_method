@@ -238,7 +238,10 @@ def ci_pin(E):
 
 
 def doctor(E, repo, branch, run=False):
-    scripts = ['mdm-contract.py', 'mdm_model.py', 'mdm_operations.py', 'mdm-ops.py', 'mdm-check.sh', 'check-consistency.sh', 'check-plan.py']
+    # 엔진 파일이 하나라도 빠지면 `mdm check` 가 fail-closed 로 죽는다 — doctor 가 그 전에 어느 파일인지 말한다.
+    # 검사 본체(check-plan.py·check-quality.py)와 둘이 공유하는 리더(mdm_md.py)까지 센다 (1회전 K4·K6).
+    scripts = ['mdm-contract.py', 'mdm_model.py', 'mdm_operations.py', 'mdm-ops.py', 'mdm-check.sh',
+               'check-consistency.sh', 'check-plan.py', 'check-quality.py', 'mdm_md.py']
     version = mdm_env.plugin_version()
     pin = ci_pin(E)
     ci = E.path('.github/workflows/mdm-check.yml', False)

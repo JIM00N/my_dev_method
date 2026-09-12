@@ -37,6 +37,16 @@ class Contracts(unittest.TestCase):
 | ID | 이름 | 출처 | 요구사항 |
 |---|---|---|---|
 ''')
+        # S4 를 마친 제품을 흉내 낸다 — 1절 품질 명령 표가 채워져 있어야 정합성 검사 K 가 통과한다.
+        # (양식 그대로면 K 가 붉어지는 것이 **정상 동작**이다. 아래 KIT 복사는 이미 있는 파일을 덮지 않는다)
+        self.put('docs/spec/code-conventions.md', """# 코드 컨벤션
+## 1. 실행 가능한 품질 명령
+| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 린트 | ruff check . | 예 | 고친다 |
+| 단위 테스트 | pytest | 예 | 고친다 |
+| 타입 검사 | — 해당 없음 | 해당 없음 | — |
+""")
         self.put('docs/spec/domain.md', '# Domain\nOnly the owner may delete.\n')
         self.put('docs/plan/stories/ST-001-demo.md', '# ST-001\nDelete an order.\n')
         self.put('src/app.py', 'def allowed(owner):\n    return owner\n')

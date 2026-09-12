@@ -1,4 +1,4 @@
-<!-- dev-kit v2.0.1 · 원본: my_dev_method/plugins/mdm (Claude Code 플러그인 mdm@my-dev-method) · 업그레이드 절차: 원본 저장소 plugins/mdm/README.md -->
+<!-- dev-kit v2.1.0 · 원본: my_dev_method/plugins/mdm (Claude Code 플러그인 mdm@my-dev-method) · 업그레이드 절차: 원본 저장소 plugins/mdm/README.md -->
 
 # &lt;괄호 안에 프로젝트명 작성할 것.&gt;
 
@@ -139,7 +139,7 @@ Claude Code는 `ultrathink`(또는 `/model`에서 상위 모델), Codex는 reaso
 
 | 스크립트                                   | 무엇을 잡나                                                                                                                          | 언제                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `mdm check` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 · **마일스톤 배치** · **문서 등재 대조** · **계획 깊이**(`/mdm:plan`이 만든 계획의 사양·영향 영역·선행·권한 표 — 본체는 `check-plan.py`, **python3 필수**) | `/mdm:plan` 끝 · `/mdm:review` 1단계 · 사이클 시작·종료 · CI |
+| `mdm check` | 상류 스냅샷 무결성 · **준비 미달 진입** · 요구사항 커버리지 · **검증 조건 대비 테스트 수** · **테스트 실재** · 상류 변경 재검토 잔존 · 고아 ID 인용 · 화면 정합 · 참조 깨짐 · **마일스톤 배치** · **문서 등재 대조** · **계획 깊이**(`/mdm:plan`이 만든 계획의 사양·영향 영역·선행·권한 표 — 본체는 `check-plan.py`, **python3 필수**) · **품질 명령 확정**(`code-conventions.md` 품질 명령 표 — 착수 뒤 문서·표 부재·빈 칸·미선택 양식·열 부재, 본체는 `check-quality.py`) | `/mdm:plan` 끝 · `/mdm:review` 1단계 · 사이클 시작·종료 · CI |
 | `mdm final` | 위 정합성 검사 + **현재 파일 집합에 대응하는 인계 기록**(`mdm ops handoff-check`) — 종료·CI 의 최종 통합 검사 | 세션 종료 · 제품 CI(`.github/workflows/mdm-check.yml`) |
 | `mdm report` | (검사 아님) md를 읽어 보기 쉬운 HTML 한 장으로 그린다 | `/mdm:adopt`·`/mdm:plan`·`/mdm:ready`·`/mdm:cycle-close` 끝 |
 

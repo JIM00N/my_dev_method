@@ -1,6 +1,6 @@
 # dev-kit — AI 개발 지시서 플러그인 (`mdm`)
 
-**버전: 2.0.1** — Claude Code 플러그인 `mdm@my-dev-method`. 제품 저장소의 배포본 버전은 `CLAUDE.md` 첫 줄의
+**버전: 2.1.0** — Claude Code 플러그인 `mdm@my-dev-method`. 제품 저장소의 배포본 버전은 `CLAUDE.md` 첫 줄의
 `<!-- dev-kit v… -->` 스탬프로, 플러그인 버전은 `mdm version` 으로 확인한다 (플러그인이 심는 양식의 스탬프와 plugin.json 버전이 다르면 `mdm init` 이 아무것도 심지 않고 멈춘다. 제품 쪽 스탬프는 `mdm init --upgrade` 가 인쇄만 한다 — 제품이 옛 판인지는 첫 줄 스탬프로 사람이 본다).
 
 AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **범용 지시서 + 문서 골격 + 강제 장치** 세트.
@@ -19,7 +19,7 @@ AI(Claude Code / Codex 등)와 함께 소프트웨어를 개발할 때 쓰는 **
 |---|---|---|
 | **Claude Code** (플러그인 지원판) | 커맨드 `/mdm:…` · 서브에이전트 `mdm:…` · 훅 · `mdm` 런처의 PATH 등록 | 검사 엔진은 밖에서도 돈다(아래 「Claude Code 밖에서」). 훅·커맨드는 안 돈다 |
 | `bash` | 훅·정합성 검사 A~I·런처 | 강제 장치가 안 돈다 |
-| **`python3` (3.7+)** | **정합성 검사 J**(`check-plan.py`) · 계약 근거 엔진 · 리포트 · `settings.json` 등록 | **검사 J 가 실패한다 — 건너뛰지 않는다** |
+| **`python3` (3.7+)** | **정합성 검사 J·K**(`check-plan.py`·`check-quality.py`) · 계약 근거 엔진 · 리포트 · `settings.json` 등록 | **검사 J 가 실패한다 — 건너뛰지 않는다** |
 | **`mktemp`** | 검사 J 의 상태를 셸이 받아 오는 통로 | 정합성 검사가 실패한다 |
 | `git` | 훅·형상 관리·제품 루트 판정 | 커밋 계열 장치가 안 돈다 |
 | `jq` | guard 훅 2개의 입력 파싱 | guard 훅이 **경고만 남기고 통과**한다 |
@@ -81,7 +81,9 @@ claude --plugin-dir /경로/my_dev_method/plugins/mdm        # 그 세션에서�
 | `hooks/guard-dependency.sh` | `stack.md` 결정 표의 "선택" 열에 없는 패키지의 설치·매니페스트 편집을 **막는다** | 절대 규칙 4 |
 | `hooks/guard-secrets.sh` | 비밀 파일·비밀값 형태 문자열의 `git commit`(`-a`·같은 명령의 `git add` 대상 포함)과 형상 관리 대상 파일 쓰기를 **막는다** | 절대 규칙 12 · S4 4부 |
 | `bin/mdm` | 엔진 런처. Claude Code 가 PATH 에 올린다 — `mdm check` · `mdm final` · `mdm contract …` · `mdm ops …` · `mdm report …` · `mdm init …` · `mdm doctor` · `mdm root` · `mdm version` | — |
-| `scripts/check-consistency.sh` (`mdm check`) | 문서 정합성 기계 검사 **10종(A~J)** — 상류 스냅샷 무결성·요구사항 커버리지·테스트 실재·상류 변경 재검토 잔존·고아 ID 인용·화면 정합·참조 깨짐·**마일스톤 배치**·**문서 등재 대조**·**계획 깊이**(J, `self:plan` 한정) | `docs/spec/source-map.md` · `docs/upstream/plan.md` |
+| `scripts/check-consistency.sh` (`mdm check`) | 문서 정합성 기계 검사 **11종(A~K)** — 상류 스냅샷 무결성·요구사항 커버리지·테스트 실재·상류 변경 재검토 잔존·고아 ID 인용·화면 정합·참조 깨짐·**마일스톤 배치**·**문서 등재 대조**·**계획 깊이**(J, `self:plan` 한정)·**품질 명령 확정**(K, 착수 뒤) | `docs/spec/source-map.md` · `docs/upstream/plan.md` |
+| `scripts/check-quality.py` | **검사 K 의 본체** — `docs/spec/code-conventions.md` 1절의 품질 명령 표. 🔵·🟡·✅ 요구사항이 생긴 뒤에만 판정한다 (착수 전에는 쉬었다고 말하고 통과) | `docs/spec/code-conventions.md` |
+| `scripts/mdm_md.py` | J·K 가 **함께 쓰는** 마크다운 표 리더. 리더를 복제하지 않는다 — 같은 결함 계열을 표 리더 다섯 개에서 밟은 뒤의 결정이다 | — |
 | `scripts/check-plan.py` | **검사 J 의 본체** — 계획 문서의 3계층(요구사항→기능→사양)·사양 표 칸·권한 표. **python3 가 없으면 `mdm check` 가 실패한다**(건너뛰지 않는다) | `docs/upstream/plan.md` · `docs/guides/plan.md` P3 |
 | `scripts/mdm-contract.py` (`mdm contract`) · `mdm_model.py` · `mdm_operations.py` · `mdm-ops.py` (`mdm ops`) | 계약 근거·실행 증거·운영 엔진 — adopt · register · inspect · ready · verify · render · catalog · handoff · sync · doctor | `docs/guides/contract-evidence.md` · `docs/guides/operating-loop.md` |
 | `scripts/mdm-check.sh` (`mdm final`) | 최종 통합 검사 = 정합성 + 현재 인계. 종료·제품 CI | 절대 규칙 9 |
@@ -180,7 +182,7 @@ claude --plugin-dir /경로/my_dev_method/plugins/mdm        # 그 세션에서�
 검사 엔진은 커맨드가 아니라 스크립트라서 어디서든 돈다. 원본 저장소를 받아 런처를 부른다 — 제품 CI 양식이 정확히 이렇게 한다:
 
 ```bash
-git clone --depth 1 --branch v2.0.1 https://github.com/JIM00N/my_dev_method.git "$RUNNER_TEMP/mdm"
+git clone --depth 1 --branch v2.1.0 https://github.com/JIM00N/my_dev_method.git "$RUNNER_TEMP/mdm"
 MDM_PROJECT_ROOT="$PWD" bash "$RUNNER_TEMP/mdm/plugins/mdm/bin/mdm" final
 ```
 

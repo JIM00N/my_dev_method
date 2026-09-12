@@ -4,6 +4,7 @@
 #   B·C 안의 **준비도 롤업 4분기**(실패 3 · 경고 1)와 열 부재 (이슈 #091)
 #   I. 문서 등재 대조 — 미등재 문서 3유형 · 문서 없는 행 2유형 · 닫힌 Story 행 잔존 · 오탐 경계 2종
 #   J. 계획 깊이 — 사양 표(영향 영역·선행·먼저·첫 묶음 동작) · 기능 층 · 권한 표 · self:plan 경계
+#   K. 품질 명령 확정 — code-conventions.md 1절 빈 칸·미선택 양식·열 부재 · 착수 전 휴면 · 오탐 경계
 # "막는다·경고한다"는 약속의 증거가 이 파일이다 (루트 CLAUDE.md 절대 규칙 3).
 #
 # 검사기를 읽는 게 아니라 돌린다. 심는 결함마다 기대 신호를 요구하고,
@@ -13,11 +14,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN="$ROOT/plugins/mdm"
 # 엔진(플러그인 scripts/)은 제품 fixture **밖**의 형제 디렉토리 `<fixture>-engine` 에 복사한다 —
 # 2.0.0 부터 엔진은 제품에 없고, 제품 루트는 MDM_PROJECT_ROOT 로 넘긴다 (plugins/mdm/scripts/mdm_env.py).
-ENGINE_FILES="check-consistency.sh check-plan.py mdm_env.py mdm_model.py mdm-contract.py mdm_operations.py mdm-ops.py"
+ENGINE_FILES="check-consistency.sh check-plan.py check-quality.py mdm_env.py mdm_md.py mdm_model.py mdm-contract.py mdm_operations.py mdm-ops.py"
 copy_engine() { # $1 = fixture 경로 → "$1-engine" 에 엔진 사본을 깐다
   rm -rf "$1-engine"; mkdir -p "$1-engine"
   local f; for f in $ENGINE_FILES; do cp "$PLUGIN/scripts/$f" "$1-engine/"; done
-  chmod +x "$1-engine/check-consistency.sh" "$1-engine/check-plan.py"
+  chmod +x "$1-engine/check-consistency.sh" "$1-engine/check-plan.py" "$1-engine/check-quality.py"
 }
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -25,6 +26,26 @@ trap 'rm -rf "$TMP"' EXIT
 fail=0
 ok()  { printf '  통과  %s\n' "$*"; }
 ng()  { printf '  실패  %s\n' "$*"; fail=1; }
+
+# 검사 K 의 입력 — docs/spec/code-conventions.md 1절 「실행 가능한 품질 명령」 표.
+# 기본 fixture 는 **다 채운 판**을 깐다. K 는 착수한 요구사항이 있으면 도므로,
+# 이것이 없으면 H·B·I 를 재는 fixture 들이 전부 K 신호까지 함께 내서 무엇을 재는지 흐려진다.
+CONV_OK='# 코드 컨벤션
+
+## 1. 실행 가능한 품질 명령
+
+| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 포맷 검사 | make fmt | 예 | 고치고 다시 민다 |
+| 린트 | make lint | 예 | 규칙을 고치거나 코드를 고친다 |
+| 타입 검사 | — 해당 없음 | 해당 없음 | — |
+| 단위 테스트 | make test | 예 | 고친다 |
+```
+| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 펜스 안 예시 | | 예 / 아니오 | |
+```
+'
 
 # fixture 저장소 하나를 만든다. $1 = 매핑표 2절 데이터 행들(개행 구분)
 make_fixture() {
@@ -53,6 +74,7 @@ make_fixture() {
     printf '\n'
   } > "$d/docs/spec/source-map.md"
   printf '# interface\n' > "$d/docs/spec/interface.md"
+  printf '%s\n' "$CONV_OK" > "$d/docs/spec/code-conventions.md"
   printf '%s' "$d"
 }
 
@@ -1329,6 +1351,193 @@ case "$out" in
   *) ng "J38 — 경고 등급이 이어지지 않는다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
 esac
 
+echo
+echo "검사 K — 품질 명령 확정 (code-conventions.md 1절)"
+
+# K 는 **착수한 요구사항이 있을 때만** 돈다. 그래서 기본 행은 🔵 하나를 둔다 —
+# ⬜ 만 있는 행으로 재면 전 케이스가 「쉬었다」로 조용히 초록이 되고, 무엇을 재는지 증명되지 않는다.
+K_BASE='| FR-1 | prd.md | — | ✅ | M1 | C01 | 1 | — | 🔵 진행 중 | — |
+| FR-2 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |'
+K_HDR='| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|'
+set_conv() { # $1 fixture  $2 1절 표 본문(머리행 포함)
+  printf '# 코드 컨벤션\n\n## 1. 실행 가능한 품질 명령\n\n%s\n' "$2" > "$1/docs/spec/code-conventions.md"
+}
+
+# K1. 착수했는데 문서 자체가 없다
+d=$(make_fixture "$K_BASE"); rm -f "$d/docs/spec/code-conventions.md"
+expect_fail "K1 착수 후 code-conventions.md 부재를 잡는다" "$d" "code-conventions.md 가 없다"
+
+# K2. 앵커 열을 바꾸면 **fail-closed** 다 — 표를 못 찾으면 조용히 통과하지 않는다
+d=$(make_fixture "$K_BASE")
+set_conv "$d" '| 항목 | 커맨드 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 린트 | make lint | 예 | 고친다 |'
+expect_fail "K2 열 개명은 '한 건도 찾지 못했다'로 붉어진다" "$d" "표를 한 건도 찾지 못했다"
+
+# K3. 「CI에서 강제」 열 삭제 — 실물 채택 저장소가 실제로 지운 열이다
+d=$(make_fixture "$K_BASE")
+set_conv "$d" '| 검사 | 명령 | 목적 |
+|---|---|---|
+| 린트 | make lint | 스타일 |'
+expect_fail "K3 'CI에서 강제' 열 삭제를 잡는다" "$d" "「CI에서 강제」 열이 없다"
+
+# K4. 명령 칸이 비었다 — 빈 칸·'—'·양식 <…> 셋 다 빈 칸이다
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 |  | 예 | 고친다 |"
+expect_fail "K4 명령 빈 칸을 잡는다" "$d" "「린트」 행에 명령이 없다"
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | — | 예 | 고친다 |"
+expect_fail "K4-b 명령이 '—' 여도 잡는다" "$d" "「린트」 행에 명령이 없다"
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | <명령> | 예 | 고친다 |"
+expect_fail "K4-c 명령이 양식 <…> 여도 잡는다" "$d" "「린트」 행에 명령이 없다"
+
+# K5. 「CI에서 강제」가 아직 선택되지 않았다 — 양식 메뉴 그대로거나 빈 칸
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 타입 검사 | mypy | 예 / 아니오 / 해당 없음 | 고친다 |"
+expect_fail "K5 미선택 양식 메뉴를 잡는다" "$d" "아직 선택되지 않았다"
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 타입 검사 | mypy |  | 고친다 |"
+expect_fail "K5-b CI 칸 빈 칸도 잡는다" "$d" "아직 선택되지 않았다"
+
+# K6. 「해당 없음」으로 답한 행은 면제된다 (오탐 경계 — 정상 입력에서 울면 검사가 무뎌진다)
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | make lint | 예 | 고친다 |
+| 타입 검사 |  | 해당 없음 | — |"
+expect_no_signal "K6 '해당 없음' 행은 명령이 없어도 조용하다" "$d" "행에 명령이 없다"
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | make lint | 예 | 고친다 |
+| 타입 검사 | — 해당 없음 | 해당 없음 | — |"
+expect_no_signal "K6-b '— 해당 없음' 표기도 면제된다" "$d" "행에 명령이 없다"
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | make lint | 예 | 고친다 |
+| 타입 검사 | 해당없음 | 해당없음 | — |"
+expect_no_signal "K6-c 공백 없는 '해당없음' 표기도 면제된다" "$d" "행에 명령이 없다"
+
+# K7. 슬래시가 든 **실값**을 양식으로 오인하지 않는다 (검사 J 가 #362·#363 에서 밟은 오탐 계열)
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 포맷 | make fmt / make lint | 예 | 고친다 |"
+expect_no_signal "K7 '/' 가 든 실값을 양식으로 오인하지 않는다" "$d" "아직 선택되지 않았다"
+
+# K8. 코드펜스 안의 표는 읽지 않는다 — CONV_OK 가 펜스 안에 빈 명령 행을 품고 있다
+d=$(make_fixture "$K_BASE")
+expect_no_signal "K8 펜스 안 예시 표를 1절로 읽지 않는다" "$d" "「펜스 안 예시」 행에 명령이 없다"
+
+# K9. 착수 전(⬜ 뿐)에는 쉰다 — 문서가 없어도 통과하고, **쉬었다고 말한다**
+d=$(make_fixture '| FR-1 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |
+| FR-2 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |')
+rm -f "$d/docs/spec/code-conventions.md"
+out="$(run "$d")"; rc=$?
+case "$out" in
+  *"품질 명령 검사(K)는 쉬었다"*)
+    if [ "$rc" = 0 ]; then ok "K9 착수 전에는 쉬고 그렇게 말한다 (rc=0)"
+    else ng "K9 — 쉬었다는데 rc=$rc 다"; fi ;;
+  *) ng "K9 — 착수 전인데 쉬었다고 말하지 않는다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
+esac
+
+# K10. 호출자가 착수 건수를 안 주면 본체가 **판정하지 않고 실패**한다 —
+#      기본값으로 넘기면 셸 쪽 오타 하나에 검사가 꺼진 채 초록이 된다 (런처 SCRIPTS 오타 계열).
+d=$(make_fixture "$K_BASE")
+out=$(cd "$d" && MDM_PROJECT_ROOT="$d" python3 "$d-engine/check-quality.py" 2>&1); rc=$?
+case "$out" in
+  *"착수 건수(--active)가 오지 않았다"*)
+    if [ "$rc" = 1 ]; then ok "K10 --active 없이 부르면 본체가 실패한다 (rc=1)"
+    else ng "K10 — 신호는 났으나 rc=$rc 다 (1 이어야 한다)"; fi ;;
+  *) ng "K10 — --active 없이 불렀는데 실패하지 않는다"; printf '%s\n' "$out" | sed 's/^/        /' ;;
+esac
+
+# K11. [1회전 K2·K3·K4 높음, 반증 확정] **미끼 표** — 열 이름을 하나도 안 바꾸고 순서만 바꾼 표를
+#      위에 두면, 첫 표 머리행을 모든 행에 쓰던 판은 진짜 표의 공백을 통째로 면제했다.
+d=$(make_fixture "$K_BASE")
+set_conv "$d" '| 명령 | 검사 | 실패 시 조치 | CI에서 강제 |
+|---|---|---|---|
+| make fmt | 포맷 | 고친다 | 예 |
+
+실제 표:
+
+| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 린트 |  | 예 / 아니오 | 고친다 |'
+expect_fail "K11 순서만 바꾼 미끼 표가 진짜 표를 면제시키지 않는다" "$d" "「린트」 행에 명령이 없다"
+
+# K12. [같은 뿌리, 오탐 방향] 품질 명령 절 **밖**의 표는 판정하지 않는다.
+#      좁히지 않던 판은 다 채운 문서를 부록 표 때문에 붉혔다.
+d=$(make_fixture "$K_BASE")
+set_conv "$d" "$K_HDR
+| 린트 | make lint | 예 | 고친다 |
+
+## 9. 배포 전 수동 점검
+
+| 검사 | 명령 | 주기 |
+|---|---|---|
+| 스모크 |  | 매일 |"
+expect_no_signal "K12 품질 명령 절 밖의 표는 판정하지 않는다" "$d" "「스모크」"
+expect_no_signal "K12-b 그 표의 열 부재도 보고하지 않는다" "$d" "열이 없다"
+
+# K13. [같은 뿌리, 우회 방향] 절을 비우고 **딴 절에** 채운 표를 두는 것으로 빠져나가지 못한다.
+d=$(make_fixture "$K_BASE")
+set_conv "$d" '아직 정하지 않았다.
+
+## 9. 부록
+
+| 검사 | 명령 | CI에서 강제 | 실패 시 조치 |
+|---|---|---|---|
+| 포맷 검사 | prettier | 예 | 고친다 |'
+expect_fail "K13 딴 절의 표로 품질 명령 절을 대신하지 못한다" "$d" "표를 한 건도 찾지 못했다"
+
+# K14. [1회전 K1·K2, 반증이 남긴 한 줄] 전 행이 「해당 없음」이면 침묵하지 않는다.
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 포맷 검사 |  | 해당 없음 |  |
+| 린트 |  | 해당 없음 |  |"
+expect_fail "K14 전 행 면제(확정 명령 0개)를 잡는다" "$d" "전부 「해당 없음」"
+
+# K15. [1회전 K2] 렌더 화면에서 빈 칸과 구별되지 않는 값을 「채웠다」로 받지 않는다.
+for v in $'​' '&nbsp;' '–' '−' '‐' '``' '<br>'; do
+  d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | $v | 예 | 고친다 |"
+  expect_fail "K15 빈 칸 위장('$v')을 잡는다" "$d" "「린트」 행에 명령이 없다"
+done
+
+# K16. [1회전 K2] 미선택 메뉴의 표기 변형도 잡는다 (`<br>` 구분 · 보이지 않는 꼬리 · 쉼표).
+for v in '예<br>아니오' $'예 / 아니오​' '예, 아니오'; do
+  d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 | make lint | $v | 고친다 |"
+  expect_fail "K16 미선택 변형('$v')을 잡는다" "$d" "아직 선택되지 않았다"
+done
+
+# K17. [1회전 K6·F6 반증 확정] 셸 호출 경계 — 엔진 부재·본체 비정상 종료.
+#      (python3 부재 분기는 도달 불가로 판정돼 본체에서 제거했다 — F6-b 기각)
+d=$(make_fixture "$K_BASE"); rm -f "$d-engine/check-quality.py"
+expect_fail "K17 엔진에 check-quality.py 가 없으면 막는다" "$d" "check-quality.py 가 없다"
+d=$(make_fixture "$K_BASE")
+printf '#!/usr/bin/env python3\nimport sys\nsys.exit(3)\n' > "$d-engine/check-quality.py"
+expect_fail "K17-b 본체가 비정상 rc 로 죽으면 막는다" "$d" "비정상 종료했다 (rc=3)"
+
+# K18. [1회전 K6] 매핑표에 '상태' 열이 없으면 K 는 조용히 쉬지 않고 그렇게 말한다.
+d=$(make_fixture "$K_BASE")
+sed -i.bak 's/| 테스트 | 상태 | 재검토 |/| 테스트 | 재검토 |/; s/| 🔵 진행 중 | — |/| — |/; s/| ⬜ 대기 | — |/| — |/' "$d/docs/spec/source-map.md"
+expect_signal "K18 상태 열이 없으면 K 가 못 돌았다고 말한다" "$d" "품질 명령 검사(K)를 돌리지 못했다"
+
+# K19. [#495] **실물 양식**을 그대로 물린다 — 합성 표만 재면 양식 기본 칸이 드리프트했을 때
+#      (예: 명령 칸 기본값이 「해당 없음」이 되면) 모든 신규 제품에서 K 가 조용히 면제된다.
+d=$(make_fixture "$K_BASE")
+cp "$PLUGIN/templates/docs/spec/code-conventions.md" "$d/docs/spec/code-conventions.md"
+expect_fail "K19 배포 양식 그대로면 붉어진다 (양식 드리프트 감시)" "$d" "행에 명령이 없다"
+
+# K20. [#492] 착수 건수 계수는 🔵 만이 아니다 — 🟡·✅ 도 착수다.
+#      패턴을 하나로 줄인 판에서도 전 케이스가 초록이던 자리다.
+d=$(make_fixture '| FR-1 | prd.md | — | ✅ | M1 | C01 | 1 | t1 | ✅ 완료 | — |
+| FR-2 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |')
+set_conv "$d" "$K_HDR
+| 린트 |  | 예 | 고친다 |"
+expect_fail "K20 ✅ 완료만 있어도 K 가 돈다" "$d" "「린트」 행에 명령이 없다"
+d=$(make_fixture '| FR-1 | prd.md | — | ✅ | M1 | C01 | 1 | — | 🟡 검수 대기 | — |
+| FR-2 | prd.md | — | ✅ | M1 | C01 | 1 | — | ⬜ 대기 | — |')
+set_conv "$d" "$K_HDR
+| 린트 |  | 예 | 고친다 |"
+expect_fail "K20-b 🟡 검수 대기만 있어도 K 가 돈다" "$d" "「린트」 행에 명령이 없다"
+
 # 뮤테이션 자기검증 — 검사기에서 H 블록을 들어내면 위 fixture 들이 반드시 깨져야 한다.
 echo
 echo "뮤테이션 자기검증"
@@ -1480,9 +1689,61 @@ if [ "$rc" = 0 ]; then ok "조기 종료 ②를 무조건 exit 0 으로 되돌�
 else ng "조기 종료 ②를 exit 0 으로 되돌렸는데도 rc=$rc — 이 뮤테이션이 아무것도 재지 않는다"
      printf '%s\n' "$out" | sed 's/^/        /'; fi
 
+# ── K 뮤테이션 ───────────────────────────────────────────────────────────
+# 셸의 호출 블록 하나와 **본체(check-quality.py) 두 곳**에 직접 가한다.
+# 호출만 재면 「셸이 K 를 부른다」까지만 증명되고 정작 판정하는 파일이 무검증으로 남는다.
+
+# K-M1. 셸의 K 호출 블록을 들어내면 K1 신호가 사라져야 한다
+d=$(make_fixture "$K_BASE"); rm -f "$d/docs/spec/code-conventions.md"
+python3 - "$d-engine/check-consistency.sh" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+i = s.index('# ── K. 품질 명령 확정')
+j = s.index('# ── 결과 ──', i)
+open(p, 'w', encoding='utf-8').write(s[:i] + s[j:])
+PY
+out="$(run "$d")"
+case "$out" in
+  *"code-conventions.md 가 없다"*) ng "K 호출을 들어냈는데도 신호가 났다 — fixture 가 검사기를 실측하지 않는다" ;;
+  *) ok "K 호출을 들어내면 신호가 사라진다 (fixture 가 진짜로 K 를 재고 있다)" ;;
+esac
+
+# K-M2. 본체의 면제 판정을 **항상 참**으로 만들면 K4(명령 빈 칸)가 조용해져야 한다
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 린트 |  | 예 | 고친다 |"
+python3 - "$d-engine/check-quality.py" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+old = '        if is_na(cmd) or is_na(ci):'
+assert s.count(old) == 1
+open(p, 'w', encoding='utf-8').write(s.replace(old, '        if True:', 1))
+PY
+out="$(run "$d")"
+case "$out" in
+  *"행에 명령이 없다"*) ng "면제 판정을 항상 참으로 만들었는데도 K4 신호가 났다 — fixture 가 본체를 실측하지 않는다" ;;
+  *) ok "면제 판정을 항상 참으로 만들면 K4 가 조용해진다 (fixture 가 본체를 재고 있다)" ;;
+esac
+
+# K-M3. 본체의 미선택-양식 판정을 **항상 거짓**으로 만들면 K5 가 조용해져야 한다
+d=$(make_fixture "$K_BASE"); set_conv "$d" "$K_HDR
+| 타입 검사 | mypy | 예 / 아니오 / 해당 없음 | 고친다 |"
+python3 - "$d-engine/check-quality.py" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+old = '    parts = [p.strip() for p in re.split(r"[/,]", v)]'
+assert s.count(old) == 1
+open(p, 'w', encoding='utf-8').write(s.replace(old, '    return False\n' + old, 1))
+PY
+out="$(run "$d")"
+case "$out" in
+  *"아직 선택되지 않았다"*) ng "미선택 판정을 항상 거짓으로 만들었는데도 K5 신호가 났다 — fixture 가 본체를 실측하지 않는다" ;;
+  *) ok "미선택 판정을 항상 거짓으로 만들면 K5 가 조용해진다 (fixture 가 본체를 재고 있다)" ;;
+esac
+
+
 echo
 if [ "$fail" = 0 ]; then
-  echo "정합성 검사 회귀 통과 (H · 준비도 롤업 · I 등재 대조 · J 계획 깊이)"
+  echo "정합성 검사 회귀 통과 (H · 준비도 롤업 · I 등재 대조 · J 계획 깊이 · K 품질 명령)"
 else
   echo "정합성 검사 회귀 실패"
   exit 1

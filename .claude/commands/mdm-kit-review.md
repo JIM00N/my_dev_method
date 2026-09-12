@@ -18,7 +18,7 @@ argument-hint: [리뷰 범위. 생략하면 현재 작업 트리의 변경 전�
 ```bash
 scripts/check-docs.sh        # 경로·참조(키트 + **이 저장소 자신**) · 절 이름 포인터 · 축↔에이전트 대응 · 셸 문법 · **훅 실행 권한** (`.githooks/*` 포함 — 권한이 빠지면 게이트가 조용히 fail-open 된다)
 scripts/test-review-gate.sh  # 커밋 게이트(도장·훅)의 적발·통과 실측 + 뮤테이션 자기검증
-scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기 · I 문서 등재 대조 · **J 계획 깊이**)
+scripts/test-consistency.sh  # 정합성 검사 회귀 fixture (H 마일스톤 배치 · 준비도 롤업 4분기 · I 문서 등재 대조 · **J 계획 깊이** · **K 품질 명령 확정**)
 python3 -m unittest discover -s scripts/tests -v  # 계약 근거·실행 증거
 scripts/test-report.sh       # report.py 회귀 fixture (Story 문서 ↔ 사이클 축약 슬롯 공존 모드)
 scripts/test-docs-check.sh   # **check-docs.sh 자신의 회귀 fixture** (단언 47줄 — 루트 `CLAUDE.md`가 정본) — 검사 1-c·5·6·7·8·9·10·11·12 에 위반을 심어 붉어지는지 실측

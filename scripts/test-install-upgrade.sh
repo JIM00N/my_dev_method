@@ -59,6 +59,12 @@ PY
 grep -q "dev-kit v${PLUGIN_VER} " "$d/CLAUDE.md" && ok "심은 CLAUDE.md 스탬프가 플러그인 버전(${PLUGIN_VER})이다" || ng "CLAUDE.md 스탬프가 플러그인 버전과 다르다"
 grep -q "MDM_KIT_REF: v${PLUGIN_VER}" "$d/.github/workflows/mdm-check.yml" && ok "심은 CI 양식의 핀이 플러그인 버전이다" || ng "CI 양식의 MDM_KIT_REF 핀이 플러그인 버전과 다르다"
 grep -q '/mdm:adopt' "$TMP/out" && ok "다음 행동으로 /mdm:adopt 를 안내한다" || ng "설치 출력이 다음 행동(/mdm:adopt)을 말하지 않는다"
+# 첫 세션이 제일 먼저 읽는 것은 설치 출력이 아니라 STATUS 다 (제품 CLAUDE.md 0절). 그 STATUS 가 S0 을
+# 가리키지 않으면 도입을 건너뛰고 S1 부터 밟게 된다 — 2026-08 외부 리뷰 원형이고 1회전 K4 가 2.0.1 에서도 재현했다(#479).
+if grep -q 'S0-adopt.md' "$d/docs/status/STATUS.md" && grep -q '^\*\*현재 단계\*\*: \*\*S0' "$d/docs/status/STATUS.md" \
+   && grep -q '^| \*\*S0 ' "$d/docs/status/STATUS.md"; then
+  ok "심은 STATUS 가 현재 단계·다음 가이드·단계 진행판에서 **S0** 을 가리킨다 (#479)"
+else ng "심은 STATUS 가 S0 을 가리키지 않는다 — 첫 세션이 도입(/mdm:adopt)을 건너뛴다"; fi
 # 팀원 안내 — 2.0.0 출력은 「다시 시작하면 설치를 묻는다」고 약속했다. Claude Code 2.1.195 부터 프로젝트 settings 만으로 켠 외부 플러그인은
 # 각자 설치 동의를 받는다 — 이 플러그인이 그 대상인지는 실측하지 않았으므로 출력은 설치를 약속하지 않고 한 줄을 준다.
 if teammate_ok "$TMP/out"; then
